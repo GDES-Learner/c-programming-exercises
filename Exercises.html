@@ -1,0 +1,2145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Exercises 1 · Foundations of C Programming</title>
+<style>
+/* ============ tokens ============ */
+:root{
+  --ink:#eef2fb;
+  --muted:rgba(226,232,248,.60);
+  --faint:rgba(226,232,248,.38);
+  --stroke:rgba(255,255,255,.10);
+  --stroke-hi:rgba(255,255,255,.22);
+  --glass:rgba(255,255,255,.055);
+  --glass-2:rgba(255,255,255,.085);
+  --accent:#8fb6ff;
+  --accent-2:#c3a4ff;
+  --mint:#8ef0d3;
+  --radius:28px;
+  --ease:cubic-bezier(.22,1,.36,1);
+  --shadow:0 40px 90px -40px rgba(0,0,0,.95), 0 8px 30px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  background:#04050a;
+  background-image:radial-gradient(1300px 900px at 50% -12%,#101a33 0%,#080b14 48%,#04050a 100%);
+  color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI Variable Display","Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  -webkit-font-smoothing:antialiased;
+  letter-spacing:-.011em;
+  overflow:hidden;
+}
+::selection{background:rgba(143,182,255,.35)}
+
+/* ============ ambient background ============ */
+.bg{position:fixed;inset:-20vmax;z-index:0;filter:blur(64px) saturate(155%) brightness(1.06);opacity:1;pointer-events:none}
+.blob{position:absolute;border-radius:50%;mix-blend-mode:screen;will-change:transform}
+.b1{width:52vmax;height:52vmax;left:-8vmax;top:-14vmax;background:radial-gradient(circle at 30% 30%,rgba(96,142,255,.85),transparent 62%);animation:drift1 26s var(--ease) infinite alternate}
+.b2{width:44vmax;height:44vmax;right:-10vmax;top:-6vmax;background:radial-gradient(circle at 60% 40%,rgba(178,120,255,.66),transparent 60%);animation:drift2 32s var(--ease) infinite alternate}
+.b3{width:56vmax;height:56vmax;left:18vmax;bottom:-24vmax;background:radial-gradient(circle at 50% 50%,rgba(58,214,202,.52),transparent 62%);animation:drift3 38s var(--ease) infinite alternate}
+.b4{width:34vmax;height:34vmax;right:6vmax;bottom:-10vmax;background:radial-gradient(circle at 50% 50%,rgba(255,116,190,.42),transparent 62%);animation:drift1 30s var(--ease) infinite alternate-reverse}
+@keyframes drift1{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(8vmax,6vmax,0) scale(1.12)}}
+@keyframes drift2{from{transform:translate3d(0,0,0) scale(1.05)}to{transform:translate3d(-7vmax,9vmax,0) scale(.95)}}
+@keyframes drift3{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(6vmax,-8vmax,0) scale(1.15)}}
+.grain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.055;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E")}
+.vignette{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(125% 95% at 50% 0%,transparent 42%,rgba(2,3,8,.58) 100%)}
+
+/* ============ glass primitives ============ */
+.glass{
+  position:relative;
+  background:linear-gradient(168deg,rgba(255,255,255,.125),rgba(255,255,255,.045) 46%,rgba(255,255,255,.07));
+  -webkit-backdrop-filter:blur(34px) saturate(190%);
+  backdrop-filter:blur(34px) saturate(190%);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.26),inset 0 -1px 0 rgba(255,255,255,.06),inset 0 0 60px rgba(255,255,255,.03);
+}
+.glass::before{
+  content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;pointer-events:none;
+  background:linear-gradient(155deg,rgba(255,255,255,.55),rgba(255,255,255,.10) 28%,rgba(255,255,255,0) 52%,rgba(255,255,255,.06) 74%,rgba(255,255,255,.28));
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude;
+}
+
+/* ============ top bar ============ */
+.topbar{position:fixed;top:0;left:0;right:0;z-index:40;padding:14px clamp(12px,3vw,34px) 0}
+.topbar-in{
+  max-width:1180px;margin:0 auto;height:62px;display:flex;align-items:center;gap:18px;
+  padding:0 14px 0 18px;border-radius:22px;
+  background:linear-gradient(180deg,rgba(22,26,38,.62),rgba(14,17,26,.44));
+  -webkit-backdrop-filter:blur(30px) saturate(200%);backdrop-filter:blur(30px) saturate(200%);
+  box-shadow:0 22px 60px -28px rgba(0,0,0,.9),inset 0 1px 0 rgba(255,255,255,.18),inset 0 -1px 0 rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.09);
+  position:relative;overflow:hidden;
+}
+.topbar-in::after{content:"";position:absolute;left:0;right:0;top:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);opacity:.7}
+.brand{display:flex;align-items:center;gap:11px;min-width:0}
+.orb{
+  width:26px;height:26px;border-radius:50%;flex:none;
+  background:conic-gradient(from 210deg,#8fb6ff,#c3a4ff,#8ef0d3,#8fb6ff);
+  box-shadow:0 0 22px rgba(143,182,255,.55),inset 0 0 8px rgba(255,255,255,.6);
+  animation:spin 14s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.brand-txt{display:flex;flex-direction:column;line-height:1.15;min-width:0}
+.brand-txt strong{font-size:13.5px;font-weight:600;letter-spacing:-.01em;white-space:nowrap}
+.brand-txt span{font-size:10.5px;color:var(--faint);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+
+.chips{display:flex;align-items:center;gap:4px;overflow-x:auto;flex:1;min-width:0;padding:4px 2px;scrollbar-width:none;mask-image:linear-gradient(90deg,transparent,#000 12px,#000 calc(100% - 18px),transparent)}
+.chips::-webkit-scrollbar{display:none}
+.chip{
+  flex:none;width:30px;height:30px;border-radius:10px;border:1px solid transparent;background:transparent;
+  color:var(--faint);font:600 12px/1 ui-monospace,"SF Mono",Consolas,monospace;cursor:pointer;
+  transition:all .35s var(--ease);position:relative;display:grid;place-items:center;
+}
+.chip:hover{color:var(--ink);background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.14)}
+.chip.on{color:#0a0d15;background:linear-gradient(160deg,#e8eeff,#b9c8ec);box-shadow:0 6px 18px -6px rgba(180,200,255,.9),inset 0 1px 0 #fff;border-color:transparent}
+.chip.done::after{content:"";position:absolute;bottom:3px;width:3px;height:3px;border-radius:50%;background:var(--mint);opacity:.9}
+.chip.on.done::after{background:#2b4a44}
+
+.tools{display:flex;align-items:center;gap:8px;flex:none}
+.counter{font:500 11.5px/1 ui-monospace,Consolas,monospace;color:var(--faint);letter-spacing:.08em;margin-right:2px}
+.tool{
+  width:36px;height:36px;border-radius:12px;border:1px solid rgba(255,255,255,.10);
+  background:rgba(255,255,255,.055);color:var(--ink);cursor:pointer;display:grid;place-items:center;
+  transition:all .35s var(--ease);backdrop-filter:blur(10px);
+}
+.tool:hover{background:rgba(255,255,255,.14);border-color:var(--stroke-hi);transform:translateY(-1px)}
+.tool:active{transform:scale(.94)}
+.tool svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.tool:disabled{opacity:.3;pointer-events:none}
+
+/* progress hairline */
+.pbar-wrap{position:fixed;left:0;right:0;top:0;height:2px;z-index:45;background:transparent}
+.pbar{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent-2),var(--mint));box-shadow:0 0 14px rgba(143,182,255,.8);transition:width .6s var(--ease)}
+
+/* ============ stage / card ============ */
+main{position:relative;z-index:10;height:100dvh;padding:98px clamp(12px,3vw,34px) 30px;display:flex;justify-content:center}
+.stage{width:100%;max-width:1000px;height:100%;display:flex;min-width:0}
+.card{
+  width:100%;display:flex;flex-direction:column;min-height:0;min-width:0;overflow:hidden;
+  padding:0;position:relative;
+}
+.card::after{
+  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .5s;
+  background:radial-gradient(420px circle at var(--mx,50%) var(--my,0%),rgba(255,255,255,.10),transparent 62%);
+}
+.card:hover::after{opacity:1}
+.anim{animation:cardIn .62s var(--ease) both}
+.anim.back{animation-name:cardInBack}
+@keyframes cardIn{from{opacity:0;transform:translate3d(28px,10px,0) scale(.985)}to{opacity:1;transform:none}}
+@keyframes cardInBack{from{opacity:0;transform:translate3d(-28px,10px,0) scale(.985)}to{opacity:1;transform:none}}
+
+.card-top{padding:26px clamp(20px,3.2vw,38px) 16px;flex:none;position:relative}
+.meta{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.num{
+  font:600 12px/1 ui-monospace,"SF Mono",Consolas,monospace;letter-spacing:.14em;
+  color:transparent;background:linear-gradient(120deg,#a8c4ff,#d3bcff 60%,#a6f2dd);-webkit-background-clip:text;background-clip:text;
+  padding:5px 9px;border-radius:9px;border:1px solid rgba(255,255,255,.12);background-color:rgba(255,255,255,.05);
+}
+.cat{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+.meta .sep{width:3px;height:3px;border-radius:50%;background:var(--faint)}
+h2.title{margin:0;font-size:clamp(21px,2.5vw,29px);font-weight:600;letter-spacing:-.022em;line-height:1.2}
+h2.title .grad{background:linear-gradient(180deg,#fff,#c6d2ea);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+.card-body{
+  flex:1;min-height:0;min-width:0;overflow-y:auto;overscroll-behavior:contain;
+  padding:4px clamp(20px,3.2vw,38px) 26px;
+  -webkit-mask-image:linear-gradient(180deg,transparent 0,#000 12px,#000 calc(100% - 26px),transparent 100%);
+  mask-image:linear-gradient(180deg,transparent 0,#000 12px,#000 calc(100% - 26px),transparent 100%);
+  scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.16) transparent;
+  padding-top:12px;
+}
+.card-body::-webkit-scrollbar{width:8px}
+.card-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:99px;border:2px solid transparent;background-clip:padding-box}
+.card-body::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.24);background-clip:padding-box}
+
+/* question content */
+.q{min-width:0}
+.q p{margin:0 0 12px;font-size:15px;line-height:1.72;color:rgba(238,242,251,.92)}
+.q p:last-child{margin-bottom:0}
+.q code,.q .k{
+  font:500 12.8px/1.5 ui-monospace,"SF Mono",Consolas,monospace;
+  background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.10);
+  padding:1.5px 5px;border-radius:6px;color:#dce6ff;white-space:nowrap;
+}
+pre code,.q pre code,.panel-card pre code{
+  white-space:pre;background:none;border:0;padding:0;border-radius:0;color:inherit;
+  font:inherit;letter-spacing:0;
+}
+.label{display:flex;align-items:center;gap:8px;margin:20px 0 9px;font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--faint)}
+.label::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(255,255,255,.14),transparent)}
+.label.first{margin-top:8px}
+
+pre{margin:0 0 14px;border-radius:16px;padding:16px 18px;overflow:auto;max-width:100%;
+  background:linear-gradient(180deg,rgba(9,12,20,.72),rgba(6,8,14,.55));
+  border:1px solid rgba(255,255,255,.075);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 16px 34px -24px rgba(0,0,0,.9);
+  font:400 12.9px/1.72 ui-monospace,"SF Mono","Cascadia Code",Consolas,monospace;
+  tab-size:4;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.14) transparent;
+}
+pre::-webkit-scrollbar{height:8px;width:8px}
+pre::-webkit-scrollbar-thumb{background:rgba(255,255,255,.13);border-radius:99px}
+pre.out{color:#a9b6d0;background:linear-gradient(180deg,rgba(8,11,18,.6),rgba(6,8,14,.42));border-style:dashed;border-color:rgba(255,255,255,.09)}
+.figure{margin:4px auto 16px;display:flex;justify-content:center;padding:12px;border-radius:16px;max-width:620px;
+  background:rgba(255,255,255,.94);border:1px solid rgba(255,255,255,.2);
+  box-shadow:0 18px 40px -26px rgba(0,0,0,.95),inset 0 1px 0 #fff}
+.figure img{max-width:100%;max-height:min(42vh,380px);width:auto;height:auto;display:block;border-radius:6px}
+pre.out .dim{color:rgba(169,182,208,.45);font-style:italic}
+
+/* syntax */
+.kw{color:#c0a6ff}.st{color:#8fe6b6}.ch{color:#f3c98b}.cm{color:rgba(160,175,200,.62);font-style:italic}
+.pp{color:#84b6ff}.nu{color:#f7a8c8}.fn{color:#9fd0ff}
+
+/* actions */
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin:22px 0 0}
+.btn{
+  position:relative;display:inline-flex;align-items:center;gap:8px;border-radius:14px;cursor:pointer;
+  padding:11px 18px;font-size:13.5px;font-weight:600;letter-spacing:-.01em;color:var(--ink);
+  border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.07);
+  transition:all .4s var(--ease);backdrop-filter:blur(12px);
+}
+.btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;opacity:.85}
+.btn:hover{background:rgba(255,255,255,.14);transform:translateY(-1px);box-shadow:0 14px 30px -18px rgba(0,0,0,.9)}
+.btn:active{transform:scale(.97)}
+.btn.primary{
+  color:#0a0e18;border-color:transparent;
+  background:linear-gradient(160deg,#f2f6ff,#b9cdf5 70%,#a9c6ff);
+  box-shadow:0 14px 34px -16px rgba(160,190,255,.75),inset 0 1px 0 #fff;
+}
+.btn.primary:hover{filter:brightness(1.05)}
+.btn.on{background:linear-gradient(160deg,rgba(255,255,255,.22),rgba(255,255,255,.10));border-color:var(--stroke-hi)}
+.btn.primary.on{
+  background:linear-gradient(160deg,#fff,#c9d9f8 70%,#b3ccff);
+  box-shadow:0 0 0 3px rgba(150,185,255,.22),0 14px 34px -16px rgba(160,190,255,.8),inset 0 1px 0 #fff;
+}
+.btn.on svg{opacity:1}
+.btn .tag-zh{font-size:11px;font-weight:500;color:var(--faint);letter-spacing:.02em}
+.btn.primary .tag-zh{color:rgba(10,14,24,.5)}
+
+.panel{display:grid;grid-template-rows:0fr;opacity:0;transition:grid-template-rows .58s var(--ease),opacity .45s var(--ease),margin-top .4s var(--ease);margin-top:0}
+.panel>.inner{overflow:hidden;min-height:0}
+.panel.open{grid-template-rows:1fr;opacity:1;margin-top:14px}
+.panel-card{
+  border-radius:18px;padding:18px 20px;
+  background:linear-gradient(180deg,rgba(255,255,255,.075),rgba(255,255,255,.028));
+  border:1px solid rgba(255,255,255,.11);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.16);
+  transform:translateY(-6px);transition:transform .58s var(--ease);
+}
+.panel.open .panel-card{transform:none}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.panel-title{display:flex;align-items:center;gap:9px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.panel-title .dotw{width:7px;height:7px;border-radius:50%;box-shadow:0 0 12px currentColor}
+.hint .dotw{background:#ffd98a;color:#ffd98a}
+.ans .dotw{background:var(--mint);color:var(--mint)}
+.panel-card p{margin:0 0 10px;font-size:14px;line-height:1.78;color:rgba(238,242,251,.9)}
+.panel-card p:last-child{margin-bottom:0}
+.panel-card ul{margin:10px 0 0;padding-left:18px}
+.panel-card li{font-size:13.6px;line-height:1.75;color:rgba(232,238,250,.82);margin-bottom:7px}
+.panel-card ul:last-child li:last-child{margin-bottom:0}
+.panel-card code{font:500 12.6px/1.5 ui-monospace,Consolas,monospace;background:rgba(255,255,255,.1);padding:1.5px 5px;border-radius:6px;color:#dce6ff}
+.copy{
+  font:600 10.5px/1 ui-monospace,Consolas,monospace;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--faint);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+  padding:6px 10px;border-radius:8px;cursor:pointer;transition:all .3s var(--ease);
+}
+.copy:hover{color:var(--ink);background:rgba(255,255,255,.14)}
+.copy.ok{color:#0a1410;background:var(--mint);border-color:transparent}
+
+/* footer nav */
+.card-foot{flex:none;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px clamp(20px,3.2vw,38px);border-top:1px solid rgba(255,255,255,.07);background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.05))}
+.foot-btn{display:inline-flex;align-items:center;gap:8px;background:transparent;border:0;color:var(--muted);font:500 13px/1 inherit;cursor:pointer;padding:8px 4px;transition:color .3s var(--ease),transform .3s var(--ease)}
+.foot-btn:hover{color:var(--ink)}
+.foot-btn:disabled{opacity:.28;pointer-events:none}
+.foot-btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.foot-mid{font:500 11px/1 ui-monospace,Consolas,monospace;letter-spacing:.16em;color:var(--faint)}
+
+/* ============ palette overlay ============ */
+.scrim{position:fixed;inset:0;z-index:60;display:grid;place-items:start center;padding:clamp(60px,12vh,120px) 16px 24px;
+  background:rgba(3,5,10,.5);-webkit-backdrop-filter:blur(22px) saturate(140%);backdrop-filter:blur(22px) saturate(140%);
+  opacity:0;pointer-events:none;transition:opacity .45s var(--ease)}
+.scrim.open{opacity:1;pointer-events:auto}
+.palette{width:min(880px,100%);max-height:min(76vh,760px);display:flex;flex-direction:column;border-radius:26px;padding:16px;
+  background:linear-gradient(180deg,rgba(26,30,44,.95),rgba(11,14,22,.94));
+  border:1px solid rgba(255,255,255,.14);
+  box-shadow:0 50px 120px -40px #000,inset 0 1px 0 rgba(255,255,255,.22);
+  transform:translateY(-14px) scale(.985);transition:transform .5s var(--ease)}
+.scrim.open .palette{transform:none}
+.pal-top{display:flex;align-items:center;gap:12px;padding:6px 8px 14px}
+.search{flex:1;display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:13px;padding:0 14px;height:44px}
+.search svg{width:16px;height:16px;stroke:var(--faint);fill:none;stroke-width:1.8;stroke-linecap:round}
+.search input{flex:1;background:none;border:0;outline:none;color:var(--ink);font-size:14.5px;letter-spacing:-.01em}
+.search input::placeholder{color:var(--faint)}
+.kbd{font:600 10px/1 ui-monospace,Consolas,monospace;color:var(--faint);border:1px solid rgba(255,255,255,.14);border-radius:5px;padding:3px 6px}
+.pal-grid{overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px;padding:4px 4px 8px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.15) transparent}
+.pal-grid::-webkit-scrollbar{width:8px}
+.pal-grid::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:99px}
+.tile{display:flex;gap:12px;align-items:flex-start;text-align:left;padding:12px 13px;border-radius:14px;cursor:pointer;
+  background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08);transition:all .32s var(--ease);color:var(--ink)}
+.tile:hover{background:rgba(255,255,255,.11);border-color:rgba(255,255,255,.2);transform:translateY(-2px)}
+.tile.on{background:linear-gradient(160deg,rgba(180,205,255,.22),rgba(255,255,255,.06));border-color:rgba(190,210,255,.4)}
+.tile .tn{font:600 11px/1 ui-monospace,Consolas,monospace;color:var(--faint);padding-top:2px;min-width:18px;flex:none}
+.tile .tw{display:block;min-width:0}
+.tile .tt{display:block;font-size:13.2px;font-weight:550;line-height:1.35;letter-spacing:-.012em}
+.tile .tc{display:block;font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:rgba(226,232,248,.42);margin-top:5px}
+.empty{padding:26px;text-align:center;color:var(--faint);font-size:13px}
+
+/* keyboard hint */
+.legend{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);z-index:20;display:flex;gap:16px;font-size:10.5px;color:rgba(226,232,248,.30);letter-spacing:.06em;pointer-events:none}
+.legend b{font-weight:600;color:rgba(226,232,248,.55)}
+@media (max-width:1120px){.legend{display:none}}
+@media (max-width:900px){.chips{display:none}.brand-txt span{display:none}}
+@media (max-width:720px){
+  .topbar{padding:10px 10px 0}
+  .topbar-in{height:56px;border-radius:18px;gap:10px}
+  main{padding:80px 10px 12px}
+  .card{max-height:none}
+  .card-top{padding:20px 18px 10px}
+  .card-body{padding:8px 18px 20px;overflow:visible}
+  .card-foot{padding:12px 18px}
+  .q p{font-size:14.4px}
+  pre{font-size:12px;padding:14px}
+  .counter{display:none}
+  body{overflow:auto}
+  main{height:auto;min-height:100dvh}
+  .stage{height:auto}
+  .card{min-height:0}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.001s!important;transition-duration:.08s!important}
+}
+</style>
+</head>
+<body>
+
+<div class="bg" aria-hidden="true">
+  <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div><div class="blob b4"></div>
+</div>
+<div class="grain" aria-hidden="true"></div>
+<div class="vignette" aria-hidden="true"></div>
+
+<div class="pbar-wrap"><div class="pbar" id="pbar"></div></div>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <div class="brand">
+      <span class="orb"></span>
+      <div class="brand-txt"><strong>Exercises 1</strong><span>Foundations of C</span></div>
+    </div>
+    <nav class="chips" id="chips" aria-label="Exercise navigation"></nav>
+    <div class="tools">
+      <span class="counter" id="counter">01 / 27</span>
+      <button class="tool" id="openPalette" title="Contents (/)">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.6"/><rect x="14" y="3" width="7" height="7" rx="1.6"/><rect x="3" y="14" width="7" height="7" rx="1.6"/><rect x="14" y="14" width="7" height="7" rx="1.6"/></svg>
+      </button>
+      <button class="tool" id="prevBtn" title="Previous (←)">
+        <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <button class="tool" id="nextBtn" title="Next (→)">
+        <svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main><div class="stage" id="stage"></div></main>
+
+<div class="legend" aria-hidden="true">
+  <span><b>← →</b> navigate</span><span><b>H</b> hint</span><span><b>A</b> answer</span><span><b>/</b> contents</span>
+</div>
+
+<div class="scrim" id="scrim">
+  <div class="palette" role="dialog" aria-modal="true" aria-label="Exercise contents">
+    <div class="pal-top">
+      <div class="search">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input id="search" type="text" placeholder="Search exercises, topics…" autocomplete="off" spellcheck="false" />
+        <span class="kbd">ESC</span>
+      </div>
+    </div>
+    <div class="pal-grid" id="palGrid"></div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   DATA — 27 exercises, answers written for this page
+   ========================================================= */
+const DATA = [
+{
+  n:1, cat:'Data Types & Overflow', title:'Type Sizes with sizeof',
+  body:[
+    ['p',String.raw`The operator <code>sizeof</code> gives the number of bytes used for storing a datum of certain type in computer. For example, the result of <code>sizeof(int)</code> is <code>4</code> because 4 bytes are used to save an int type datum. The following statement`],
+    ['c',String.raw`printf("Number of bytes used to store an int type variable is %d\n", sizeof(int));`],
+    ['p',String.raw`will produce the following output:`],
+    ['o',String.raw`Number of bytes used to store an int type variable is 4`],
+    ['p',String.raw`Please write a program to produce the output in the following format:`],
+    ['o',String.raw`Number of bytes used to store a char type variable is __
+Number of bytes used to store a short int type variable is __
+Number of bytes used to store an int type variable is __
+Number of bytes used to store a float type variable is __
+Number of bytes used to store a long int type variable is __
+Number of bytes used to store a double type variable is __`]
+  ],
+  hint:String.raw`<p><code>sizeof</code> 不是函数，而是编译期运算符：既可以写 <code>sizeof(int)</code>，也可以写 <code>sizeof x</code>。它的结果单位是“字节”。</p><p>题目只要求把六种类型的字节数按顺序打印出来，所以就是六条 <code>printf</code>，每行把 <code>__</code> 换成对应的 <code>sizeof(...)</code>。</p><p>小提醒：<code>sizeof</code> 的真实类型是 <code>size_t</code>（无符号），配合 <code>%d</code> 时最好先转成 <code>int</code>；另外 <code>long int</code> 在 32 位编译器下是 4，在 64 位下通常是 8。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    printf("Number of bytes used to store a char type variable is %d\n",      (int)sizeof(char));
+    printf("Number of bytes used to store a short int type variable is %d\n", (int)sizeof(short int));
+    printf("Number of bytes used to store an int type variable is %d\n",      (int)sizeof(int));
+    printf("Number of bytes used to store a float type variable is %d\n",     (int)sizeof(float));
+    printf("Number of bytes used to store a long int type variable is %d\n",  (int)sizeof(long int));
+    printf("Number of bytes used to store a double type variable is %d\n",    (int)sizeof(double));
+    return 0;
+}
+
+/* Output (32-bit MinGW / Dev-C++):
+1 2 4 4 4 8
+   On a 64-bit compiler long int is usually 8, so the 5th line prints 8. */`,
+  notes:[
+    String.raw`<code>sizeof</code> 的结果在编译时就能确定，不占运行时间。`,
+    String.raw`括号里可以放类型名，也可以放变量名或表达式，例如 <code>sizeof x</code>、<code>sizeof(x + 1)</code>。`,
+    String.raw`强制转换成 <code>(int)</code> 只是为了不触发 <code>%d</code> 与 <code>size_t</code> 的类型警告，输出结果不变。`
+  ]
+},
+{
+  n:2, cat:'Data Types & Overflow', title:'Why the Two Sums Differ',
+  body:[
+    ['p',String.raw`Run the following program which tries to use two ways to output the sum of 32767 and 3. Explain why two outputs are not same. Put the explanation as comments at the end of program.`],
+    ['c',String.raw`#include <stdio.h>
+int main (){
+    short int x, y, z;
+    x = 32767;
+    y = 3;
+    z = x + y;
+    printf("%d + %d = %d\n", x, y, x + y); //print x+y
+    printf("%d + %d = %d\n", x, y, z); //print z
+    return 0;
+}
+
+/* 
+Put your explanation here.
+*/`]
+  ],
+  hint:String.raw`<p>先分清两件事：表达式 <code>x + y</code> 在什么类型下计算，以及 <code>z</code> 是什么类型。</p><p>在 C 里做算术时会先“整型提升”，<code>short</code> 会被提升成 <code>int</code>，所以 <code>x + y</code> 得到的是 <code>32770</code>，没有溢出。</p><p>但 <code>z = ...</code> 要写回 <code>short int</code>。2 字节的 <code>short</code> 范围是 <code>-32768 ~ 32767</code>，装不下 32770 就会“回绕”。先算 32770 - 65536 是多少？</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    short int x, y, z;
+    x = 32767;
+    y = 3;
+    z = x + y;
+    printf("%d + %d = %d\n", x, y, x + y); //print x+y
+    printf("%d + %d = %d\n", x, y, z);     //print z
+    return 0;
+}
+
+/* Output:
+32767 + 3 = 32770
+32767 + 3 = -32766
+
+Explanation:
+1. In "x + y" the two short int values are promoted to int, so the
+   addition is done in int (4 bytes). 32770 fits in int, so the first
+   printf prints 32770.
+2. z is declared as short int, whose range is -32768 .. 32767.
+   32770 is out of range. Only the low 16 bits are kept:
+   32770 - 65536 = -32766, so printf prints -32766.
+   (Signed overflow on conversion is implementation-defined in C;
+    on gcc / MinGW it wraps around exactly like this.)
+*/`,
+  notes:[
+    String.raw`口诀：<b>计算时提升，赋值时截断</b>。`,
+    String.raw`<code>short</code> 占 2 字节 = 16 位，最高位是符号位，所以最大正数是 2<sup>15</sup> - 1 = 32767。`,
+    String.raw`把 <code>z</code> 改成 <code>int</code> 或 <code>long</code>，两行输出就会一致。`
+  ]
+},
+{
+  n:3, cat:'Data Types & Overflow', title:'Debug: Header, Types and Quotes',
+  body:[
+    ['p',String.raw`Correct the following program so that this program can produce output`],
+    ['o',String.raw`x = 3, y = 1.5, c = #.`],
+    ['p',String.raw`When you correct the program, you are NOT allowed to change some parts. Pay attention to the comments in the program.`],
+    ['c',String.raw`#include <stio.h>
+int main (){
+    int y;
+    float x;
+    char c = ‘#’;
+    x = 3.5;    //the number 3.5 must not be changed
+    y = 1.5     //the number 1.5 must not be changed
+    printf("x = %d, y = %.1f, c = %c.\n", x, y, c); // don’t change this sentence
+    return 0;
+}`]
+  ],
+  hint:String.raw`<p>一共 4 个坑，从前往后找：头文件名拼错了；字符的引号是中文全角引号；<code>y = 1.5</code> 后面少了分号。</p><p>最关键的是类型：<code>printf</code> 那句不能改，它的格式是 <code>%d</code> 对应 <code>x</code>、<code>%.1f</code> 对应 <code>y</code>，而且期望输出 <code>x = 3</code>、<code>y = 1.5</code>。</p><p>所以谁该是 <code>int</code>、谁该是 <code>float</code>？如果把 <code>x</code> 声明成 <code>int</code>，那么 <code>x = 3.5</code> 会截断成 3 —— 而 3.5 这个数字本身不用改，这就对上了。</p>`,
+  sol:String.raw`#include <stdio.h>
+int main (){
+    int x;
+    float y;
+    char c = '#';
+    x = 3.5;    //the number 3.5 must not be changed
+    y = 1.5;    //the number 1.5 must not be changed
+    printf("x = %d, y = %.1f, c = %c.\n", x, y, c); // don't change this sentence
+    return 0;
+}
+
+/* Output:
+x = 3, y = 1.5, c = #.
+
+Fixed:
+1. <stio.h>      -> <stdio.h>
+2. ‘#’           -> '#'        (full-width quotes are not C syntax)
+3. y = 1.5       -> y = 1.5;   (missing semicolon)
+4. int y; float x;  ->  int x; float y;
+   because %d prints x and %.1f prints y,
+   and 3.5 assigned to an int truncates to 3. */`,
+  notes:[
+    String.raw`<code>int x; x = 3.5;</code> 是“隐式截断”，只保留整数部分，编译器可能给 warning 但能通过。`,
+    String.raw`全角引号 <code>‘ ’</code> 是复制网页/Word 时最常见的隐藏错误，肉眼几乎看不出。`,
+    String.raw`格式串里的 <code>%d</code>/<code>%f</code> 必须和实参类型一致，否则是未定义行为。`
+  ]
+},
+{
+  n:4, cat:'Console I/O & Formatting', title:'Reading a Character',
+  body:[
+    ['p',String.raw`If <code>ch</code> is a char variable, then we can use <code>ch = getchar()</code> statement to read a character from keyboard and assign the char to <code>ch</code>. We can also use <code>putchar(ch)</code> statement to output the value of the variable <code>ch</code> to screen. Write a program to read a character and then output it.`],
+    ['p',String.raw`<b>Attention:</b> In the sample output, "Read a character from keyboard: " and "Output the character: " can be produced from the printf statement.`],
+    ['l','I/O Samples'],
+    ['p',String.raw`<b>Example 1</b>`],
+    ['o',String.raw`Read a character from keyboard: a
+Output the character: a
+Press any key to continue...`],
+    ['p',String.raw`<b>Example 2</b>`],
+    ['o',String.raw`Read a character from keyboard: w
+Output the character: w
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>顺序是：先 <code>printf</code> 提示语（不要带 <code>\n</code>），再 <code>getchar()</code> 读一个字符，然后再打印第二条提示，最后 <code>putchar</code>。</p><p>两条提示语的冒号后面都有一个空格，这个空格是要打印出来的。如果第二行提示没有换行，它就会紧跟在用户输入后面 —— 输入时按下的回车本身就会换行。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    char ch;
+
+    printf("Read a character from keyboard: ");
+    ch = getchar();
+
+    printf("Output the character: ");
+    putchar(ch);
+    putchar('\n');
+
+    return 0;
+}
+
+/* Sample run (the user types a, then ENTER):
+Read a character from keyboard: a
+Output the character: a */`,
+  notes:[
+    String.raw`<code>getchar()</code> 一次只取一个字符，返回的是 <code>int</code>（这样才能表示 EOF）。`,
+    String.raw`<code>putchar(ch)</code> 等价于 <code>printf("%c", ch)</code>，但更轻量。`,
+    String.raw`提示语后面不加 <code>\n</code>，光标才会停在冒号后面等用户输入。`
+  ]
+},
+{
+  n:5, cat:'Console I/O & Formatting', title:'Four Experiments with Format Specifiers',
+  body:[
+    ['p',String.raw`Run the given program following the steps below and record the output at the end of program as comments.`],
+    ['p',String.raw`• Run this program and check the output.`],
+    ['p',String.raw`• Change <code>int</code> to <code>float</code> in the variable declaration, and check the output again.`],
+    ['p',String.raw`• Change all <code>%d</code> into <code>%f</code> in the printf statement, and check the output again.`],
+    ['p',String.raw`• Add .2 between <code>%</code> and f in the first <code>%f</code> in the printf statement, and check the output. Submit the final version with comments.`],
+    ['c',String.raw`#include <stdio.h>
+int main() {
+    int value1, value2, sum;
+    value1 = 15;
+    value2 = 30;
+    sum = value1 + value2;
+    printf("The sum of %d and %d is %d\n", value1, value2, sum);
+    return 0;
+} 
+/* 
+Put your outputs here.
+1. 
+2.
+3.
+4.
+*/`]
+  ],
+  hint:String.raw`<p>这一步实验的目的只有一个：让你亲眼看到 <b>格式串和实参类型不匹配</b> 会怎样。</p><p>第 2 步把变量换成 <code>float</code> 却还用 <code>%d</code>，<code>printf</code> 会把 float 的 4 个字节当成 int 来读 —— 结果是一堆看不懂的数字（未定义行为）。</p><p>第 3、4 步才恢复正常：<code>%f</code> 默认 6 位小数，<code>%.2f</code> 保留 2 位。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main() {
+    float value1, value2, sum;
+    value1 = 15;
+    value2 = 30;
+    sum = value1 + value2;
+    printf("The sum of %.2f and %f is %f\n", value1, value2, sum);
+    return 0;
+}
+
+/* 
+1. int + %d:
+   The sum of 15 and 30 is 45
+
+2. int -> float, still %d  (undefined behaviour):
+   The sum of 0 and 1077936128 is 0
+   (garbage: the bits of a float are read as if they were an int;
+    the exact numbers depend on the compiler)
+
+3. %d -> %f:
+   The sum of 15.000000 and 30.000000 is 45.000000
+
+4. %.2f on the first %f:
+   The sum of 15.00 and 30.000000 is 45.000000
+*/`,
+  notes:[
+    String.raw`<code>%f</code> 默认输出 6 位小数；<code>%.2f</code> 表示保留 2 位。`,
+    String.raw`格式串与实参类型不匹配时 C 不会报错，只会“按你写的类型去解释内存”，所以结果不可预测。`,
+    String.raw`<code>15</code> 赋给 <code>float</code> 会自动转成 <code>15.0</code>，不需要写小数点。`
+  ]
+},
+{
+  n:6, cat:'Console I/O & Formatting', title:'Escape Sequences in One printf',
+  body:[
+    ['p',String.raw`Write a program to give the output in the sample using a <code>printf</code> statement.`],
+    ['l','Non-Functional Requirements'],
+    ['p',String.raw`• Use \t for the spaces between the letters`],
+    ['l','I/O Samples'],
+    ['p',String.raw`<b>Sample Output</b>`],
+    ['o',String.raw`\\"H	e	l	l	o"\\
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>这一题考三个转义：<code>\\</code> 输出一个反斜杠、<code>\"</code> 输出一个双引号、<code>\t</code> 输出一个制表符。</p><p>逐字对样例：开头是“两个反斜杠 + 一个双引号”，结尾是“一个双引号 + 两个反斜杠”，中间 H e l l o 之间都是 <code>\t</code>。</p><p>所以源码里要写 <code>\\\\</code> 才能打出两个反斜杠，别数错。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    printf("\\\\\"H\te\tl\te\to\"\\\\\n");
+    return 0;
+}
+
+/* Output:
+\\"H	e	l	l	o"\\
+
+Breakdown of the format string:
+  \\\\  -> prints two backslashes   \\
+  \"    -> prints one double quote  "
+  \t    -> moves the cursor to the next tab stop
+  \n    -> ends the line
+
+If your teacher's sample shows only one backslash on each side,
+use  printf("\"H\te\tl\te\to\"\n");  instead. */`,
+  notes:[
+    String.raw`<code>\t</code> 制表符的对齐宽度取决于终端，通常每 8 列一个制表位。`,
+    String.raw`<code>printf</code> 里想输出 <code>\</code> 必须写 <code>\\</code>，想输出 <code>"</code> 必须写 <code>\"</code>。`,
+    String.raw`<code>"H\te..."</code> 中 H 后面直接跟 <code>\t</code>，不要手动敲空格。`
+  ]
+},
+{
+  n:7, cat:'Console I/O & Formatting', title:'How scanf Parses Three Inputs',
+  body:[
+    ['p',String.raw`Run the program and try the following three different inputs:`],
+    ['p',String.raw`• 10of100<br>• 10 of100<br>• 10 of 100`],
+    ['p',String.raw`Record the output for each input and give the explanations to the output in the comments at the end of the program.`],
+    ['c',String.raw`#include <stdio.h>
+int main() {
+    int percentage, x;
+    char ch1, ch2;
+    scanf("%d%c%c%d", &percentage, &ch1, &ch2, &x);
+    printf("%d%% %c%c %d is %f\n", percentage, ch1, ch2, x, 1.0*x*percentage/100); 
+    return 0;
+}
+/* 
+Put outputs and explanations here.
+1. 10of100: 
+2. 10 of100:
+3. 10 of 100:
+*/`]
+  ],
+  hint:String.raw`<p>关键在于三种转换说明的差别：<code>%d</code> 会<b>跳过</b>前面的空白字符，而 <code>%c</code> <b>不跳过</b>任何字符，空格也算一个字符。</p><p>输入 <code>10of100</code>：<code>%d</code> 读 10，接着两个 <code>%c</code> 分别拿到 <code>o</code> 和 <code>f</code>，最后 <code>%d</code> 读 100。</p><p>输入 <code>10 of100</code> 时，两个 <code>%c</code> 拿到的是空格和 <code>o</code>，然后 <code>%d</code> 碰到 <code>f</code> 读不下去，转换失败 —— <code>x</code> 从头到尾没被赋值。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main() {
+    int percentage, x = 0;
+    char ch1, ch2;
+    scanf("%d%c%c%d", &percentage, &ch1, &ch2, &x);
+    printf("%d%% %c%c %d is %f\n", percentage, ch1, ch2, x, 1.0*x*percentage/100);
+    return 0;
+}
+
+/* 
+1. 10of100:
+   10% of 100 is 10.000000
+   %d stops at 'o'; ch1='o', ch2='f'; the last %d then reads 100.
+
+2. 10 of100:
+   10%  o <garbage> is <garbage>
+   ch1=' ' and ch2='o'; the last %d meets 'f', the conversion
+   fails and x keeps its old (uninitialised) value.
+   Here x was initialised to 0, so it prints:
+   10%  o 0 is 0.000000
+
+3. 10 of 100:
+   10%  o 100 is 10.000000
+   %d skips the space after 'o' and reads 100, so the result
+   is the same as case 1.
+
+Note: cases 1 and 3 give the same number; only case 2 fails.
+*/`,
+  notes:[
+    String.raw`<code>%d</code> 会自动跳过前导空白（空格、Tab、回车），<code>%c</code> 不会。`,
+    String.raw`转换失败时 <code>scanf</code> 停止解析并返回已成功赋值的个数，但它不会给变量清零。`,
+    String.raw`想让 <code>%c</code> 也跳过空白，写成 <code>" %c"</code>（格式串里加一个空格）。`
+  ]
+},
+{
+  n:8, cat:'Console I/O & Formatting', title:'Five Bugs to Fix',
+  body:[
+    ['p',String.raw`Fix the bugs in the following program. Run the modified program so that it can produce the expected output as shown in sample.`],
+    ['c',String.raw`main()
+{
+    int i, j;
+    char ch;
+    float f;
+    scanf("%d%d%c", i, j, ch);
+    printf("%c is the ASCII code of '%c'.\n", ch,  ch);
+    printf("The value of i is %t.", &i);
+    printf("The value of j is %d.", &j)
+    return 0;
+}`],
+    ['l','I/O Samples'],
+    ['p',String.raw`<b>Sample input and output</b>`],
+    ['o',String.raw`10 20.5 D
+68 is the ASCII code of 'D'.
+The value of i is 10.
+The value of j is 20.5.
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>对着样例一句一句看。第一行要输出 <code>68</code>，但程序写的是 <code>%c</code> —— 要打印 ASCII 码值应该用 <code>%d</code>。</p><p><code>scanf</code> 少写了取地址符，三个参数都要 <code>&amp;</code>；而且输入里有 <code>20.5</code>，<code>j</code> 不能是 <code>int</code>。</p><p>还有：<code>%t</code> 不是合法格式符；<code>&amp;i</code> 把地址传给了 <code>printf</code>；最后一条 <code>printf</code> 少了分号；<code>main</code> 要写成 <code>int main</code> 并带上头文件。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main() {
+    int i;
+    float j;
+    char ch;
+
+    scanf("%d %f %c", &i, &j, &ch);
+
+    printf("%d is the ASCII code of '%c'.\n", ch, ch);
+    printf("The value of i is %d.\n", i);
+    printf("The value of j is %.1f.\n", j);
+
+    return 0;
+}
+
+/* Sample run:
+10 20.5 D
+68 is the ASCII code of 'D'.
+The value of i is 10.
+The value of j is 20.5.
+
+Bugs fixed:
+1. main() -> int main() and #include <stdio.h> added.
+2. int i, j;          -> int i; float j;      (20.5 must be kept)
+3. scanf("...", i, j, ch) -> scanf(..., &i, &j, &ch)
+4. "%d%d%c"           -> "%d %f %c"           (j is a float; the space
+                        before %c makes it skip the blank and read 'D')
+5. printf("%c is the ASCII code...") -> "%d"  (68, not 'D')
+6. "%t" and &i        -> "%d" and i
+7. "%d" and &j        -> "%.1f" and j
+8. missing semicolon after the third printf. */`,
+  notes:[
+    String.raw`<code>scanf</code> 需要地址，<code>printf</code> 需要值 —— 这是最常见的混淆点。`,
+    String.raw`格式串里 <code>%c</code> 前留一个空格，可以吃掉上一次输入剩下的空白/回车。`,
+    String.raw`<code>%t</code> 不是 C 的格式说明（C++ 的 <code>std::format</code> 才有类似写法）。`
+  ]
+},
+{
+  n:9, cat:'Operators & Macros', title:'Six Arithmetic Operations',
+  body:[
+    ['p',String.raw`Write a program to read two integers <code>m</code> and <code>n</code>, and calculate the sum, subtraction, product, quotient, remainder and division. Assume that <code>n</code> is never 0. The output should look like:`],
+    ['o',String.raw`_ + _ = _
+_ ‐ _ = _
+_ * _ = _
+_ / _ = _
+_ % _ = _
+float( _ ) / _ = _`],
+    ['l','Non-Functional Requirements'],
+    ['p',String.raw`variable name should be <code>m</code> and <code>n</code>`],
+    ['l','I/O Samples'],
+    ['p',String.raw`<b>Sample 1</b>`],
+    ['o',String.raw`10 3
+10 + 3 = 13
+10 - 3 = 7
+10 * 3 = 30
+10 / 3 = 3
+10 % 3 = 1
+float(10) / 3 = 3.333333
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 2</b>`],
+    ['o',String.raw`-10 3
+-10 + 3 = -7
+-10 - 3 = -13
+-10 * 3 = -30
+-10 / 3 = -3
+-10 % 3 = -1
+float(-10) / 3 = -3.333333
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>前五行都是整数运算，直接 <code>m+n</code> 这样写就行；注意 <code>printf</code> 里想打印百分号要写 <code>%%</code>。</p><p>最后一行要求带小数，<code>m/n</code> 是整数除法会截断，必须先把其中一个转成浮点：<code>(float)m / n</code>。</p><p>样例里 <code>-10 % 3 = -1</code>，说明 C 的取余符号跟随被除数，写的时候不用特殊处理。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    int m, n;
+
+    scanf("%d %d", &m, &n);
+
+    printf("%d + %d = %d\n", m, n, m + n);
+    printf("%d - %d = %d\n", m, n, m - n);
+    printf("%d * %d = %d\n", m, n, m * n);
+    printf("%d / %d = %d\n", m, n, m / n);
+    printf("%d %% %d = %d\n", m, n, m % n);
+    printf("float(%d) / %d = %f\n", m, n, (float)m / n);
+
+    return 0;
+}
+
+/* Input: 10 3
+10 + 3 = 13
+10 - 3 = 7
+10 * 3 = 30
+10 / 3 = 3
+10 % 3 = 1
+float(10) / 3 = 3.333333  */`,
+  notes:[
+    String.raw`整数除法 <code>10 / 3</code> 结果是 3，小数部分被直接丢掉，不是四舍五入。`,
+    String.raw`<code>(float)m / n</code> 会先把 m 变成 10.0，再做浮点除法；写成 <code>(float)(m / n)</code> 就晚了。`,
+    String.raw`<code>%</code> 只能用于整数，且 <code>%d %% %d</code> 里的 <code>%%</code> 是为了打印一个百分号。`
+  ]
+},
+{
+  n:10, cat:'Operators & Macros', title:'Pre-increment vs Post-increment',
+  body:[
+    ['p',String.raw`Find out the output of the following program before running it in your computer. Then run the program in computer and compare your output with the output from the computer. Change <code>%7d</code> in the second printf to <code>%-7d</code> and run again. Put the outputs as comments in the end of the program and explain the use of <code>%7d</code> and <code>%-7d</code>`],
+    ['c',String.raw`#include <stdio.h>
+int main (){
+    int x = 50, y = 25;
+    int temp1, temp2;
+    temp1 = x/++y;
+    printf("temp1= %d\ty= %d\n", temp1, y);
+    y=25;
+    temp2 = x/y++;
+    printf("temp2= %7d\ty= %d\n", temp2, y);
+    return 0;
+}
+/* 
+Output of
+(1)	%7d: 
+(2)	%-7d:
+Explanation: 
+(1)	difference between temp1 and temp2:
+(2)	difference between %7d and %-7d:
+*/`]
+  ],
+  hint:String.raw`<p><code>++y</code> 是前置自增：<b>先把 y 加到 26，再参与除法</b>，50/26 = 1。</p><p><code>y++</code> 是后置自增：<b>先用 y 的旧值 25 做除法</b>得到 2，然后 y 才变成 26。所以两行里 y 最后都是 26，但 temp 不同。</p><p>格式方面：<code>%7d</code> 表示“占 7 个字符宽、右对齐”，<code>%-7d</code> 是同样的宽度但左对齐（负数表示左对齐）。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    int x = 50, y = 25;
+    int temp1, temp2;
+
+    temp1 = x / ++y;
+    printf("temp1= %d\ty= %d\n", temp1, y);
+
+    y = 25;
+    temp2 = x / y++;
+    printf("temp2= %7d\ty= %d\n", temp2, y);
+
+    return 0;
+}
+
+/* 
+Output of
+(1)	%7d:
+temp1= 1	y= 26
+temp2=       2	y= 26
+
+(2)	%-7d:
+temp1= 1	y= 26
+temp2= 2      	y= 26
+
+Explanation:
+(1)	difference between temp1 and temp2:
+    ++y increments y first (y becomes 26), then 50/26 = 1.
+    y++ divides with the old value (50/25 = 2), then increments y.
+    Both lines end with y = 26, but temp1 = 1 and temp2 = 2.
+
+(2)	difference between %7d and %-7d:
+    %7d  prints the value right-aligned in a field of width 7,
+         so six spaces are added in front of "2".
+    %-7d prints the value left-aligned in a field of width 7,
+         so six spaces are added after "2".
+*/`,
+  notes:[
+    String.raw`前置 <code>++y</code>：先加后用；后置 <code>y++</code>：先用后加。`,
+    String.raw`宽度修饰符 <code>%7d</code> 的 7 是最小宽度，数字超过 7 位时不会被截断。`,
+    String.raw`<code>%-7d</code> 里的负号表示左对齐，右侧补空格，常用于输出表格对齐。`
+  ]
+},
+{
+  n:11, cat:'Operators & Macros', title:'Bigger Number without if',
+  body:[
+    ['p',String.raw`Write a program to read two integers, compare them and output the bigger one.`],
+    ['l','Non-Functional Requirements'],
+    ['p',String.raw`No <code>if</code> statement is used in the program.`],
+    ['l','I/O Samples'],
+    ['p',String.raw`<b>Sample 1</b>`],
+    ['o',String.raw`5 9
+The bigger number is 9
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 2</b>`],
+    ['o',String.raw`15 -6
+The bigger number is 15
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>不能用 <code>if</code>，那就用条件运算符：<code>条件 ? 值1 : 值2</code>，它本身就是个表达式，可以直接放在赋值号右边。</p><p>另外 <code>a &gt; b</code> 的结果是 0 或 1，还能拿来做下标：<code>max = a * (a &gt; b) + b * (a &lt;= b)</code>。两种写法老师都认，前者更常见。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    int a, b, max;
+
+    scanf("%d %d", &a, &b);
+
+    max = (a > b) ? a : b;
+    printf("The bigger number is %d\n", max);
+
+    return 0;
+}
+
+/* Alternative without the conditional operator:
+   max = a * (a > b) + b * (a <= b);
+
+Input: 5 9    -> The bigger number is 9
+Input: 15 -6  -> The bigger number is 15 */`,
+  notes:[
+    String.raw`条件运算符 <code>?:</code> 是 C 里唯一的三元运算符，优先级低于比较运算。`,
+    String.raw`关系表达式的结果是 <code>int</code> 型的 0 或 1，可以直接参与算术。`,
+    String.raw`<code>max = a &gt; b ? a : b;</code> 不加括号也能跑，但加括号更稳。`
+  ]
+},
+{
+  n:12, cat:'Operators & Macros', title:'Function-like Macro square',
+  body:[
+    ['p',String.raw`Write a program to calculate a^2+b^2. Assign the result of a^2+b^2 to the variable <code>square_sum</code>, then output it, where a and b are integers inputted from keyboard.`],
+    ['l','Non-Functional Requirements'],
+    ['p',String.raw`1. Define a macro for <code>square</code>, referring to lecture 4 slide 32.<br>2. The variable declaration in this program should be <code>int a, b, square_sum;</code>.`],
+    ['l','I/O Samples'],
+    ['o',String.raw`3 4
+Square sum is 25
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>带参数的宏用 <code>#define</code> 写：<code>#define square(x) ((x)*(x))</code>。</p><p>为什么要加两层括号？因为宏是<b>文本替换</b>，如果写成 <code>#define square(x) x*x</code>，那么 <code>square(a+1)</code> 会展开成 <code>a+1*a+1</code>，结果就错了。</p><p>声明必须严格写成题目要求的那一行，然后 <code>square_sum = square(a) + square(b);</code>。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+#define square(x) ((x) * (x))
+
+int main(void) {
+    int a, b, square_sum;
+
+    scanf("%d %d", &a, &b);
+
+    square_sum = square(a) + square(b);
+    printf("Square sum is %d\n", square_sum);
+
+    return 0;
+}
+
+/* Input: 3 4
+Square sum is 25
+
+If the macro were "#define square(x) x*x",
+square(a+1) would expand to a+1*a+1 = a + a + 1 (wrong). */`,
+  notes:[
+    String.raw`宏没有类型检查、也没有函数调用开销，纯粹是预处理阶段的文本替换。`,
+    String.raw`每个参数和整个表达式都要包括号，这是写宏的铁律。`,
+    String.raw`宏名后面不能有空格，<code>#define square (x)...</code> 会被当成无参宏。`
+  ]
+},
+{
+  n:13, cat:'Selection & Control Flow', title:'From Flowchart to Code',
+  body:[
+    ['img','assets/flow-ex13.png'],
+    ['p',String.raw`Write a program according to the following control flow diagram and output the final value of <code>n</code>.`],
+    ['l','I/O Samples'],
+    ['p',String.raw`<b>Sample 1</b>`],
+    ['o',String.raw`Input an integer n: 9
+The final value of n is -18
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 2</b>`],
+    ['o',String.raw`Input an integer n: -5
+The final value of n is -10
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>照着菱形判断读分支：条件是 <code>n &lt; 0</code>。<b>T（真）</b>那一路直接绕过 <code>n = -n;</code> 下去，<b>F（假）</b>那一路才执行 <code>n = -n;</code>。</p><p>两条路汇合后一定执行 <code>n = 2 * n;</code>。</p><p>验算一下：输入 9 → 9 不小于 0 → 取反得 -9 → 乘 2 得 -18 ✓；输入 -5 → 小于 0，跳过取反 → 乘 2 得 -10 ✓。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    int n;
+
+    printf("Input an integer n: ");
+    scanf("%d", &n);
+
+    if (n < 0) {
+        /* true branch: skip the negation */
+    } else {
+        n = -n;              /* false branch */
+    }
+
+    n = 2 * n;
+
+    printf("The final value of n is %d\n", n);
+    return 0;
+}
+
+/* Equivalent, shorter version:
+   if (n >= 0) n = -n;
+   n = 2 * n;
+
+Input 9  -> 9 >= 0 so n = -9, then n = -18
+Input -5 -> n stays -5,            then n = -10 */`,
+  notes:[
+    String.raw`流程图里 T/F 标在菱形的哪一侧一定要看清，这题 T 分支是“跳过”而不是“执行”。`,
+    String.raw`<code>n = -n;</code> 只是取相反数，并没有改变绝对值。`,
+    String.raw`等价地可以写成 <code>n = (n &gt;= 0 ? -n : n) * 2;</code>，一行搞定。`
+  ]
+},
+{
+  n:14, cat:'Selection & Control Flow', title:'Multiples of 3 or 8',
+  body:[
+    ['p',String.raw`Write a program to input an integer <code>n</code> and decide if it is multiple of 3 or 8.`],
+    ['l','I/O Samples'],
+    ['p',String.raw`<b>Sample 1</b>`],
+    ['o',String.raw`Input an integer n: 24
+24 is multiple of both 3 and 8.
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 2</b>`],
+    ['o',String.raw`Input an integer n: -9
+-9 is only multiple of 3.
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 3</b>`],
+    ['o',String.raw`Input an integer n: 16
+16 is only multiple of 8.
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 4</b>`],
+    ['o',String.raw`Input an integer n: -4
+-4 is not multiple of 3 or 8.
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>先算两个布尔值：<code>n % 3 == 0</code> 和 <code>n % 8 == 0</code>，一共有 4 种组合，正好对应 4 个样例。</p><p>判断顺序很重要：必须先判断“同时是”，否则 24 会被 <code>only 3</code> 抢先输出。</p><p>负数的取余在 C 里 <code>-9 % 3</code> 等于 0，所以不用取绝对值。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    int n;
+
+    printf("Input an integer n: ");
+    scanf("%d", &n);
+
+    if (n % 3 == 0 && n % 8 == 0)
+        printf("%d is multiple of both 3 and 8.\n", n);
+    else if (n % 3 == 0)
+        printf("%d is only multiple of 3.\n", n);
+    else if (n % 8 == 0)
+        printf("%d is only multiple of 8.\n", n);
+    else
+        printf("%d is not multiple of 3 or 8.\n", n);
+
+    return 0;
+}
+
+/* Combined condition can also be written as  n % 24 == 0
+   because 3 and 8 are coprime. */`,
+  notes:[
+    String.raw`<code>&&</code> 的优先级低于 <code>==</code>，所以 <code>n % 3 == 0 &amp;&amp; ...</code> 不用加括号也正确。`,
+    String.raw`条件从最严格到最宽松排列，可以避免逻辑被前面的分支截走。`,
+    String.raw`能被 3 和 8 同时整除 ⟺ 能被 24 整除（3、8 互质）。`
+  ]
+},
+{
+  n:15, cat:'Selection & Control Flow', title:'Triangle Validity Check',
+  body:[
+    ['p',String.raw`Write a program to input the length of the three sides of a triangle, and decide if the three edges can form a triangle. If a length is not positive, output a warning.`],
+    ['l','I/O Samples'],
+    ['p',String.raw`<b>Sample 1</b>`],
+    ['o',String.raw`Please input the 3 lengths of edges: -1 2 3
+Warning!
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 2</b>`],
+    ['o',String.raw`Please input the 3 lengths of edges: 0 2 0
+Warning!
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 3</b>`],
+    ['o',String.raw`Please input the 3 lengths of edges: 4 3 7
+4, 3, 7 cannot form a triangle!
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 4</b>`],
+    ['o',String.raw`Please input the 3 lengths of edges: 5 4 10
+5, 4, 10 cannot form a triangle!
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 5</b>`],
+    ['o',String.raw`Please input the 3 lengths of edges: 10 6 8
+10, 6, 8 can form a triangle!
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>第一层判断：三条边都必须 <code>&gt; 0</code>，否则输出 <code>Warning!</code> 并且不再判断能否成三角形。</p><p>第二层判断：三角形不等式 —— 任意两边之和必须<b>严格大于</b>第三边。三组都要检查。</p><p>样例 3 的 <code>4 3 7</code> 恰好 <code>4+3=7</code>，不是大于，所以不能成三角形（退化成一条直线）。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    float a, b, c;
+
+    printf("Please input the 3 lengths of edges: ");
+    scanf("%f %f %f", &a, &b, &c);
+
+    if (a <= 0 || b <= 0 || c <= 0) {
+        printf("Warning!\n");
+    } else if (a + b > c && a + c > b && b + c > a) {
+        printf("%g, %g, %g can form a triangle!\n", a, b, c);
+    } else {
+        printf("%g, %g, %g cannot form a triangle!\n", a, b, c);
+    }
+
+    return 0;
+}
+
+/* %g prints 10, 6, 8 without trailing zeros,
+   which matches the sample output exactly. */`,
+  notes:[
+    String.raw`三角形不等式三组都要写：<code>a+b&gt;c</code>、<code>a+c&gt;b</code>、<code>b+c&gt;a</code>。`,
+    String.raw`只写 <code>a+b&gt;c</code> 是不够的，因为 a 不一定是最大的边。`,
+    String.raw`<code>%g</code> 会自动去掉多余的小数位，适合这种“可能整数也可能小数”的输出。`
+  ]
+},
+{
+  n:16, cat:'Selection & Control Flow', title:'Flowchart: Height and Weight',
+  body:[
+    ['img','assets/flow-ex16.png'],
+    ['p',String.raw`Write a program to implement the following control flow diagram. Assumption: the inputted height and weight are all bigger than 0.`],
+    ['l','I/O Samples'],
+    ['p',String.raw`<b>Sample 1</b>`],
+    ['o',String.raw`Input height(cm, >0) and weight(kilo, >0): 165 35
+You are too slim
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 2</b>`],
+    ['o',String.raw`Input height(cm, >0) and weight(kilo, >0): 165 45
+You are fit
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 3</b>`],
+    ['o',String.raw`Input height(cm, >0) and weight(kilo, >0): 165 90
+You are too fat
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>把 <code>height - 105</code> 先算出来当成“标准体重”，后面两个判断都用它，代码会清爽很多。</p><p>第一个菱形：<code>(height - 105) &gt; weight + 20</code>，为真就是 too slim。</p><p>第二个菱形是区间判断：<code>weight - 10 &lt; (height - 105) &lt;= weight + 20</code>。C 不能连着写两个比较，必须拆成 <code>weight - 10 &lt; h - 105 &amp;&amp; h - 105 &lt;= weight + 20</code>。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    float height, weight, standard;
+
+    printf("Input height(cm, >0) and weight(kilo, >0): ");
+    scanf("%f %f", &height, &weight);
+
+    standard = height - 105;          /* the "(height - 105)" of the chart */
+
+    if (standard > weight + 20) {
+        printf("You are too slim\n");
+    } else if (weight - 10 < standard && standard <= weight + 20) {
+        printf("You are fit\n");
+    } else {
+        printf("You are too fat\n");
+    }
+
+    return 0;
+}
+
+/* 165 35 -> standard = 60, 60 > 55          -> too slim
+   165 45 -> 60 > 65 false; 35 < 60 <= 65     -> fit
+   165 90 -> 60 > 110 false; 80 < 60 false    -> too fat */`,
+  notes:[
+    String.raw`数学写法 <code>a &lt; x &lt;= b</code> 在 C 里必须拆成 <code>a &lt; x &amp;&amp; x &lt;= b</code>。`,
+    String.raw`把流程图里重复出现的 <code>height - 105</code> 提成一个变量，既少算几次也不会写错。`,
+    String.raw`两个判断是嵌套关系（第二个只在第一个为假时执行），所以用 <code>else if</code> 而不是两个独立 <code>if</code>。`
+  ]
+},
+{
+  n:17, cat:'Selection & Control Flow', title:'Switch: Letter Grade to Points',
+  body:[
+    ['p',String.raw`Implement a program that can read and transfer a letter grade to points. Output the points to two decimal places. A waring is given for an invalid input.`],
+    ['p',String.raw`• If grade is ‘A’ or ‘a’, output points 4.00<br>• If grade is ‘B’ or ‘b’, output points 3.00<br>• If grade is ‘C’ or ‘c’, output points 2.00<br>• If grade is ‘D’ or ‘d’, output point 1.00<br>• If grade is ‘F’ or ‘f’, output point 0.00`],
+    ['p',String.raw`Assumption: the inputted grade should be of <code>char</code> type.`],
+    ['l','Non-Functional Requirements'],
+    ['p',String.raw`Use <code>switch</code> statement`],
+    ['l','I/O Samples'],
+    ['p',String.raw`<b>Sample 1</b>`],
+    ['o',String.raw`Enter a letter grade: B
+3.00
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 2</b>`],
+    ['o',String.raw`Enter a letter grade: f
+0.00
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 3</b>`],
+    ['o',String.raw`Enter a letter grade: w
+warning!
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p><code>switch</code> 的每个 <code>case</code> 只能跟一个常量，但可以连续写多个 <code>case</code> 共用一段代码 —— 大小写就靠这个“贯穿（fall through）”。</p><p>例：<code>case 'A': case 'a': printf("4.00\n"); break;</code></p><p>输出要两位小数，可以直接打印字符串 <code>"4.00"</code>，也可以用一个 <code>double</code> 变量配 <code>%.2f</code>。别忘 <code>default</code> 输出 <code>warning!</code>（小写，和样例一致）。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    char grade;
+
+    printf("Enter a letter grade: ");
+    scanf("%c", &grade);
+
+    switch (grade) {
+        case 'A': case 'a': printf("4.00\n"); break;
+        case 'B': case 'b': printf("3.00\n"); break;
+        case 'C': case 'c': printf("2.00\n"); break;
+        case 'D': case 'd': printf("1.00\n"); break;
+        case 'F': case 'f': printf("0.00\n"); break;
+        default:            printf("warning!\n"); break;
+    }
+
+    return 0;
+}
+
+/* Version with a numeric variable:
+   double points;
+   ...
+   case 'A': case 'a': points = 4.0; break;
+   ...
+   printf("%.2f\n", points); */`,
+  notes:[
+    String.raw`<code>case</code> 后面必须是整型常量，不能写 <code>case grade == 'A'</code>。`,
+    String.raw`没有 <code>break</code> 就会继续执行下一个 <code>case</code>，这里正好用来处理大小写。`,
+    String.raw`<code>switch</code> 不能判断区间或浮点数，这种“多值映射”才是它的主场。`
+  ]
+},
+{
+  n:18, cat:'Loops & Iteration', title:"Counting 'c' in a Line",
+  body:[
+    ['p',String.raw`Write a program to read a line of characters and output the number of the character <code>'c'</code> in this line. The line ends with <code>ENTER</code> key (i.e., <code>'\n'</code>). There is no limit to the number of characters in this line.`],
+    ['l','Non-Functional Requirements'],
+    ['p',String.raw`Your program should read the line character by character, i.e., use <code>%c</code> in scanf statement to read repeatedly until <code>ENTER</code> key.`],
+    ['l','I/O Samples'],
+    ['p',String.raw`<b>Sample 1</b>`],
+    ['o',String.raw`Input a line of characters: Could come account can
+There are totally 4 'c'.
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 2</b>`],
+    ['o',String.raw`Input a line of characters: abc92,fjsl$3@cdk1%
+There are totally 2 'c'.
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>不知道这一行有多长，所以要用“读到回车为止”的循环：<code>while (scanf("%c", &amp;ch) == 1 &amp;&amp; ch != '\n')</code>。</p><p>循环体里只做一件事：如果 <code>ch == 'c'</code> 就把计数器加 1。</p><p>注意样例 1 里的 <code>Could</code> 是大写 C，不算；小写 c 一共 4 个。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    char ch;
+    int count = 0;
+
+    printf("Input a line of characters: ");
+
+    while (scanf("%c", &ch) == 1 && ch != '\n') {
+        if (ch == 'c') {
+            count++;
+        }
+    }
+
+    printf("There are totally %d 'c'.\n", count);
+
+    return 0;
+}
+
+/* Input: Could come account can
+   C-o-u-l-d    -> 'C' is upper case, not counted
+   come         -> 1
+   account      -> 2
+   can          -> 1
+   total        = 4 */`,
+  notes:[
+    String.raw`<code>scanf("%c", &amp;ch)</code> 返回成功读入的个数，等于 1 说明真的读到了字符。`,
+    String.raw`<code>getchar()</code> 更简洁（<code>while ((ch = getchar()) != '\n')</code>），但本题要求用 <code>%c</code>。`,
+    String.raw`用 <code>int count = 0;</code> 初始化，否则计数会从随机值开始。`
+  ]
+},
+{
+  n:19, cat:'Loops & Iteration', title:'Sum of Even and Odd',
+  body:[
+    ['p',String.raw`Write a program to input a positive integer <code>n</code>, and calculate and output 1) the sum of the even numbers from 1 to <code>n</code> (inclusive), storing the result in the variable <code>sum_even</code>, 2) the sum of odd numbers from 1 to <code>n</code> (inclusive), storing the result in the variable <code>sum_odd</code>, and 3) the difference between these two sums, i.e., <code>sum_even</code> - <code>sum_odd</code>, storing the result in the variable <code>diff</code>. Output a warning if the input <code>n</code> is not positive.`],
+    ['l','Non-Functional Requirements'],
+    ['p',String.raw`The variable names <code>n</code>, <code>sum_even</code>, <code>sum_odd</code> and <code>diff</code> must be used as required.`],
+    ['l','I/O Samples'],
+    ['p',String.raw`<b>Sample 1</b>`],
+    ['o',String.raw`Input an integer: 9
+sum_even is 20, sum_odd is 25, diff is -5.
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 2</b>`],
+    ['o',String.raw`Input an integer: 0
+Warning! You should input a positive integer.
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>先判断 <code>n &lt;= 0</code>，若成立直接输出警告并 <code>return 0</code>，不要继续算。</p><p>然后一个 <code>for (i = 1; i &lt;= n; i++)</code>，用 <code>i % 2 == 0</code> 分两堆累加。</p><p>三个变量一定要初始化为 0；<code>diff</code> 在循环结束后再算。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    int n, i;
+    int sum_even = 0, sum_odd = 0, diff;
+
+    printf("Input an integer: ");
+    scanf("%d", &n);
+
+    if (n <= 0) {
+        printf("Warning! You should input a positive integer.\n");
+        return 0;
+    }
+
+    for (i = 1; i <= n; i++) {
+        if (i % 2 == 0)
+            sum_even += i;
+        else
+            sum_odd += i;
+    }
+
+    diff = sum_even - sum_odd;
+    printf("sum_even is %d, sum_odd is %d, diff is %d.\n", sum_even, sum_odd, diff);
+
+    return 0;
+}
+
+/* n = 9: even 2+4+6+8 = 20, odd 1+3+5+7+9 = 25, diff = -5 */`,
+  notes:[
+    String.raw`<code>+=</code> 是复合赋值，<code>sum_even += i</code> 等价于 <code>sum_even = sum_even + i</code>。`,
+    String.raw`提前 <code>return 0</code> 可以避免把警告之后的代码也执行一遍。`,
+    String.raw`其实有公式（n 为偶数时 diff = n/2），但题目要求用循环，循环也顺便验证公式。`
+  ]
+},
+{
+  n:20, cat:'Loops & Iteration', title:'Semester GPA Calculator',
+  body:[
+    ['p',String.raw`Assume that a student has 6 courses in one semester. Write a program to input grades for all the courses and the units for each course (units can only be 1 or 3 in BNBU) and then calculate sGPA (semester GPA) for this semester. Grades and points:`],
+    ['p',String.raw`A: 4, B: 3, C: 2, D: 1, F: 0.`],
+    ['p',String.raw`Assumption: Consider exactly 6 courses. GPA calculation method:`],
+    ['img','assets/gpa-formula.png'],
+    ['p',String.raw`For example, if a student gets A, B, A, F, D, and C for six courses, the units for these six courses are 3, 1, 3, 3, 1, and 3 respectively, then the sGPA is`],
+    ['img','assets/gpa-example.png'],
+    ['l','Non-Functional Requirements'],
+    ['p',String.raw`Do not use array`],
+    ['l','I/O Samples'],
+    ['p',String.raw`<b>Sample 1</b>`],
+    ['o',String.raw`Please input grade and units for each course (6 courses): A3B1A3F3D1C3
+The GPA for this semester is: 2.43
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 2</b>`],
+    ['o',String.raw`Please input grade and units for each course (6 courses): A3G1A1D3F1C1
+Warning! Invalid grade.
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>不能用数组，所以就用一个循环跑 6 次，每次读一对“字母 + 数字”，累加到两个总和里。</p><p>读这种紧挨着的输入 <code>A3B1...</code> 用 <code>scanf(" %c%d", &amp;grade, &amp;unit)</code> 最方便：<code>%d</code> 读到字母就停，下次循环正好从字母开始。</p><p>字母用 <code>switch</code> 换成学分，遇到其它字母立刻输出 <code>Warning! Invalid grade.</code> 并结束。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    int i, unit, points;
+    int total_points = 0, total_units = 0;
+    char grade;
+    double gpa;
+
+    printf("Please input grade and units for each course (6 courses): ");
+
+    for (i = 0; i < 6; i++) {
+        scanf(" %c%d", &grade, &unit);
+
+        switch (grade) {
+            case 'A': case 'a': points = 4; break;
+            case 'B': case 'b': points = 3; break;
+            case 'C': case 'c': points = 2; break;
+            case 'D': case 'd': points = 1; break;
+            case 'F': case 'f': points = 0; break;
+            default:
+                printf("Warning! Invalid grade.\n");
+                return 0;
+        }
+
+        if (unit != 1 && unit != 3) {
+            printf("Warning! Invalid units.\n");
+            return 0;
+        }
+
+        total_points += points * unit;
+        total_units  += unit;
+    }
+
+    gpa = (double)total_points / total_units;
+    printf("The GPA for this semester is: %.2f\n", gpa);
+
+    return 0;
+}
+
+/* A3 B1 A3 F3 D1 C3
+   points*units = 12 + 3 + 12 + 0 + 1 + 6 = 34
+   units        = 3 + 1 + 3 + 3 + 1 + 3  = 14
+   GPA          = 34 / 14 = 2.4285... -> 2.43 */`,
+  notes:[
+    String.raw`格式串 <code>" %c%d"</code> 开头的空格会跳过上一次输入留下的空白或换行。`,
+    String.raw`<code>(double)total_points / total_units</code> 才能得到小数，否则整数除法直接截断。`,
+    String.raw`样例 2 里的 <code>G</code> 不是合法等级，<code>default</code> 分支负责报错。`
+  ]
+},
+{
+  n:21, cat:'Loops & Iteration', title:'Nested Loops Pattern',
+  body:[
+    ['p',String.raw`Write a program to print out the following pattern.`],
+    ['o',String.raw`*********
+=======
+*****
+===
+*`],
+    ['l','Non-Functional Requirements'],
+    ['p',String.raw`<code>Nested for</code> statement should be used`]
+  ],
+  hint:String.raw`<p>数一下：一共 5 行，每行星号/等号的个数是 9、7、5、3、1 —— 每行少 2 个，所以是 <code>9 - 2 * i</code>（i 从 0 开始）。</p><p>外层 <code>for</code> 控制行数，内层 <code>for</code> 控制这一行打印几个字符，打完记得输出换行。</p><p>字符在两种之间交替：偶数行 <code>*</code>，奇数行 <code>=</code>，可以用 <code>i % 2 == 0 ? '*' : '='</code>。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    int i, j;
+
+    for (i = 0; i < 5; i++) {
+        for (j = 0; j < 9 - 2 * i; j++) {
+            putchar(i % 2 == 0 ? '*' : '=');
+        }
+        putchar('\n');
+    }
+
+    return 0;
+}
+
+/* i = 0 -> 9 '*'
+   i = 1 -> 7 '='
+   i = 2 -> 5 '*'
+   i = 3 -> 3 '='
+   i = 4 -> 1 '*'    */
+
+/* Version using printf instead of putchar:
+   for (j = 0; j < 9 - 2 * i; j++)
+       printf("%c", i % 2 == 0 ? '*' : '=');   */`,
+  notes:[
+    String.raw`外层循环变量控制“第几行”，内层循环变量控制“这一行有几个字符”，两者不能共用。`,
+    String.raw`内层循环每轮都要重新从 0 开始，所以 <code>j</code> 的初始化在内层 <code>for</code> 里。`,
+    String.raw`行数固定为 5，也可以写成 <code>9 - 2*i &gt; 0</code> 之类更通用的条件。`
+  ]
+},
+{
+  n:22, cat:'Loops & Iteration', title:'Prime Number Test',
+  body:[
+    ['p',String.raw`Write a program to read a positive integer number and decide if the number is prime or not. If the inputted number is not positive, give a warning and end the whole program.`],
+    ['l','I/O Samples'],
+    ['p',String.raw`<b>Sample 1</b>`],
+    ['o',String.raw`Input a positive integer: 37
+37 is a prime.
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 2</b>`],
+    ['o',String.raw`Input a positive integer: -9
+Warning! You should input a positive integer.
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 3</b>`],
+    ['o',String.raw`Input a positive integer: 8
+8 is not a prime.
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>先处理 <code>n &lt;= 0</code> 的警告分支，直接结束程序。</p><p>再想判定逻辑：从 2 试到 √n，只要有一个能整除就不是素数。循环条件写 <code>i * i &lt;= n</code> 比 <code>i &lt;= n/2</code> 快很多。</p><p>别忘了 1 既不是素数也不是合数，要单独处理。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    int n, i, is_prime = 1;
+
+    printf("Input a positive integer: ");
+    scanf("%d", &n);
+
+    if (n <= 0) {
+        printf("Warning! You should input a positive integer.\n");
+        return 0;
+    }
+
+    if (n == 1) is_prime = 0;
+
+    for (i = 2; i * i <= n; i++) {
+        if (n % i == 0) {
+            is_prime = 0;
+            break;          /* no need to keep testing */
+        }
+    }
+
+    if (is_prime)
+        printf("%d is a prime.\n", n);
+    else
+        printf("%d is not a prime.\n", n);
+
+    return 0;
+}
+
+/* 37 -> is a prime      (2..6 all fail to divide 37)
+   8  -> 8 % 2 == 0      -> not a prime
+   1  -> handled separately */`,
+  notes:[
+    String.raw`<code>i * i &lt;= n</code> 比 <code>sqrt(n)</code> 更安全（不用引 <code>math.h</code>，也没有浮点误差）。`,
+    String.raw`找到因子后 <code>break</code> 提前退出，效率更高。`,
+    String.raw`素数判定从 2 开始，所以 1 必须单独判断。`
+  ]
+},
+{
+  n:23, cat:'Arrays & Strings', title:'Array Search by Index',
+  body:[
+    ['p',String.raw`Write a program to find the index of an integer in an array. Assume that the array size is 50. The program will read the array elements first (end with -1, but -1 is not included) and then input an integer to search in the array. If the integer appears more than one time in the array, give the index for the first appearance of this integer. If the integer does not appear in the array, print "<code>Not found</code>". If the array is empty, output "<code>Array is empty</code>".`],
+    ['l','I/O Samples'],
+    ['p',String.raw`<b>Sample 1</b>`],
+    ['o',String.raw`Please input a sequence of integers (end with -1): 1 2 3 -1
+Enter the number you want to search: 2
+The index of 2 in the array is 1.
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 2</b>`],
+    ['o',String.raw`Please input a sequence of integers (end with -1): 10 20 5 8 9 -1
+Enter the number you want to search: 7
+7 Not found.
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 3</b>`],
+    ['o',String.raw`Please input a sequence of integers (end with -1): 10 20 5 8 9 20 -1
+Enter the number you want to search: 20
+The index of 20 in the array is 1.
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 4</b>`],
+    ['o',String.raw`Please input a sequence of integers (end with -1): -1
+Array is empty.
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>三个阶段要分清：①读入直到 -1（用一个 <code>n</code> 记录实际个数，-1 不存）；②如果 <code>n == 0</code> 立刻输出 <code>Array is empty.</code> 并结束，<b>不要再问搜索哪个数</b>；③否则提示输入目标值，遍历找第一个下标。</p><p>“第一次出现”靠 <code>break</code> 实现 —— 找到就停，不要继续覆盖下标。</p><p>找不到时输出格式是 <code>7 Not found.</code>，数字在前。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+#define MAX 50
+
+int main(void) {
+    int a[MAX];
+    int n = 0, x, i, index = -1;
+
+    printf("Please input a sequence of integers (end with -1): ");
+    while (scanf("%d", &x) == 1 && x != -1) {
+        if (n < MAX) a[n++] = x;
+    }
+
+    if (n == 0) {
+        printf("Array is empty.\n");
+        return 0;
+    }
+
+    printf("Enter the number you want to search: ");
+    scanf("%d", &x);
+
+    for (i = 0; i < n; i++) {
+        if (a[i] == x) {
+            index = i;
+            break;            /* first appearance only */
+        }
+    }
+
+    if (index == -1)
+        printf("%d Not found.\n", x);
+    else
+        printf("The index of %d in the array is %d.\n", x, index);
+
+    return 0;
+}
+
+/* Note: index is 0-based, so "1 2 3" searched for 2 gives index 1. */`,
+  notes:[
+    String.raw`<code>n</code> 是实际元素个数，同时充当“下一个空位”的下标，所以是 <code>a[n++] = x</code>。`,
+    String.raw`<code>index = -1</code> 作为“没找到”的哨兵值，最后统一判断一次。`,
+    String.raw`空数组要提前返回，否则样例 4 会多打印一行搜索提示。`
+  ]
+},
+{
+  n:24, cat:'Arrays & Strings', title:'Array-Based Stack',
+  body:[
+    ['p',String.raw`Write a program that uses array to implement a stack. At the beginning, the stack (array) is empty. There are two operations on the stack: push and pop.`],
+    ['p',String.raw`• The push operation is to add an element into an array, subsequent to the last element. If the array is full, i.e., the total number of elements in the array is the size of array, give the warning to “unsuccessful push operation”.<br>• The pop operation is to remove the last element from the array. If the array is empty, give the warning to “unsuccessful pop operation”. Following table shows an example. Assume that size of array is 5.`],
+    ['img','assets/stack-table.png'],
+    ['p',String.raw`After each operation, the system should print out the element currently in the array in sequence. Please refer to the samples. You can use 1 to indicate the push operation, 2 to indicate pop operation and 0 to terminate the execution.`],
+    ['l','Non-Functional Requirements'],
+    ['p',String.raw`Use a macro to define the size of the array.`],
+    ['l','I/O Samples'],
+    ['o',String.raw`Please choose action(1: Push 2: Pop  0: Exit): 1
+Enter an integer to push: 3
+----------------------
+| Stack: 3 
+----------------------
+Please choose action(1: Push 2: Pop  0: Exit): 1
+Enter an integer to push: 5
+----------------------
+| Stack: 3 5 
+----------------------
+Please choose action(1: Push 2: Pop  0: Exit): 2
+Popped: 5
+----------------------
+| Stack: 3 
+----------------------
+Please choose action(1: Push 2: Pop  0: Exit): 2
+Popped: 3
+----------------------
+| Stack: 
+----------------------
+Please choose action(1: Push 2: Pop  0: Exit): 2
+Unsuccessful pop operation: Stack is empty
+----------------------
+| Stack: 
+----------------------
+Please choose action(1: Push 2: Pop  0: Exit): 1
+Enter an integer to push: 10
+----------------------
+| Stack: 10 
+----------------------
+Please choose action(1: Push 2: Pop  0: Exit): 1
+Enter an integer to push: 20
+----------------------
+| Stack: 10 20 
+----------------------
+Please choose action(1: Push 2: Pop  0: Exit): 1
+Enter an integer to push: 3
+----------------------
+| Stack: 10 20 3 
+----------------------
+Please choose action(1: Push 2: Pop  0: Exit): 1
+Enter an integer to push: 23
+----------------------
+| Stack: 10 20 3 23 
+----------------------
+Please choose action(1: Push 2: Pop  0: Exit): 1
+Enter an integer to push: 5
+----------------------
+| Stack: 10 20 3 23 5 
+----------------------
+Please choose action(1: Push 2: Pop  0: Exit): 1
+Unsuccessful push operation: Stack is full
+----------------------
+| Stack: 10 20 3 23 5 
+----------------------
+Please choose action(1: Push 2: Pop  0: Exit): 0
+Exiting the program
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>用一个 <code>top</code> 记录“栈里元素个数”，它同时就是下一个空位的下标：push 是 <code>stack[top++] = v;</code>，pop 是 <code>v = stack[--top];</code>。</p><p>两种失败情况要在动手之前判断：<code>top == SIZE</code> 时不能 push，<code>top == 0</code> 时不能 pop，但<b>两种情况都还要打印一次栈的内容</b>。</p><p>用 <code>while (1)</code> + <code>0</code> 退出；打印边框是 22 个短横线。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+#define SIZE 5
+
+int main(void) {
+    int stack[SIZE];
+    int top = 0;              /* number of elements, also next free slot */
+    int action, value, i;
+
+    while (1) {
+        printf("Please choose action(1: Push 2: Pop  0: Exit): ");
+        scanf("%d", &action);
+
+        if (action == 0) {
+            printf("Exiting the program\n");
+            break;
+        }
+
+        if (action == 1) {
+            printf("Enter an integer to push: ");
+            scanf("%d", &value);
+            if (top == SIZE)
+                printf("Unsuccessful push operation: Stack is full\n");
+            else
+                stack[top++] = value;
+        } else if (action == 2) {
+            if (top == 0)
+                printf("Unsuccessful pop operation: Stack is empty\n");
+            else
+                printf("Popped: %d\n", stack[--top]);
+        }
+
+        printf("----------------------\n");
+        printf("| Stack: ");
+        for (i = 0; i < top; i++)
+            printf("%d ", stack[i]);
+        printf("\n----------------------\n");
+    }
+
+    return 0;
+}
+
+/* top == SIZE  -> push refused, but the stack content is still printed
+   top == 0     -> pop refused, empty stack still printed
+   --top uses the value AFTER decrement, which is the last valid index */`,
+  notes:[
+    String.raw`栈是“后进先出”，只需要一个 <code>top</code> 指针，不需要搬动数据。`,
+    String.raw`<code>stack[--top]</code> 先减再取，正好取到最后一个有效元素。`,
+    String.raw`失败提示要放在打印栈内容之前，这样输出顺序和样例一致。`
+  ]
+},
+{
+  n:25, cat:'Arrays & Strings', title:'Sorting Ascending and Descending',
+  body:[
+    ['p',String.raw`Write a program to sort integer-type array <code>a[n]</code> in ascending order and then in descending order. The program reads the total number <code>n</code> of integers first and then the integers to sort. Output a warning if <code>n</code> is not a positive integer.`],
+    ['l','I/O Samples'],
+    ['p',String.raw`<b>Sample 1</b>`],
+    ['o',String.raw`Input the size of the array: 5
+Input 5 integers of the array: 23 0 89 -1 55
+The original array is: 23 0 89 -1 55 
+After sorting, the array in ascending order is: -1 0 23 55 89 
+After sorting, the array in descending order is: 89 55 23 0 -1 
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 2</b>`],
+    ['o',String.raw`Input the size of the array: -6
+Warning! Array size should be positive.
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>读完 <code>n</code> 先判 <code>n &lt;= 0</code>，为真就警告并结束，避免后面定义变长数组出错。</p><p>排序用最朴素的选择排序或冒泡排序即可，两层 <code>for</code> 加一个临时变量 <code>t</code> 交换。</p><p>降序不用再排一次：升序结果从后往前打印就是降序。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    int n, i, j, t;
+    int a[100];
+
+    printf("Input the size of the array: ");
+    scanf("%d", &n);
+
+    if (n <= 0) {
+        printf("Warning! Array size should be positive.\n");
+        return 0;
+    }
+
+    printf("Input %d integers of the array: ", n);
+    for (i = 0; i < n; i++)
+        scanf("%d", &a[i]);
+
+    printf("The original array is: ");
+    for (i = 0; i < n; i++)
+        printf("%d ", a[i]);
+    printf("\n");
+
+    /* bubble sort, ascending */
+    for (i = 0; i < n - 1; i++)
+        for (j = 0; j < n - 1 - i; j++)
+            if (a[j] > a[j + 1]) {
+                t = a[j];
+                a[j] = a[j + 1];
+                a[j + 1] = t;
+            }
+
+    printf("After sorting, the array in ascending order is: ");
+    for (i = 0; i < n; i++)
+        printf("%d ", a[i]);
+    printf("\n");
+
+    printf("After sorting, the array in descending order is: ");
+    for (i = n - 1; i >= 0; i--)
+        printf("%d ", a[i]);
+    printf("\n");
+
+    return 0;
+}
+
+/* Each printed array ends with a trailing space, exactly like the sample. */`,
+  notes:[
+    String.raw`冒泡排序内层条件 <code>j &lt; n - 1 - i</code>：每轮结束最大的数已经沉到末尾，不用再比。`,
+    String.raw`交换必须用临时变量，<code>a[j] = a[j+1]; a[j+1] = a[j];</code> 会把数据覆盖掉。`,
+    String.raw`降序直接倒着遍历打印，省一次排序；如果要求数组本身变成降序，再跑一遍 <code>a[j] &lt; a[j+1]</code> 的冒泡即可。`
+  ]
+},
+{
+  n:26, cat:'Arrays & Strings', title:'4-Digit Hex to Decimal',
+  body:[
+    ['p',String.raw`Write a program to convert a 4-digit hexadecimal number into its corresponding decimal number. Output a warning if the input is not a valid hexadecimal number. Assume the length of the input is always valid and the hexadecimal number is unsigned.`],
+    ['l','Non-Functional Requirements'],
+    ['p',String.raw`Read the input using <code>%s</code>.`],
+    ['l','I/O Samples'],
+    ['p',String.raw`<b>Sample 1</b>`],
+    ['o',String.raw`Please input a 4-digit hexadecimal number: fffg
+Warning! Invalid hexadecimal number.
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 2</b>`],
+    ['o',String.raw`Please input a 4-digit hexadecimal number: ffff
+The decimal value is: 65535
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 3</b>`],
+    ['o',String.raw`Please input a 4-digit hexadecimal number: FFFF
+The decimal value is: 65535
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 4</b>`],
+    ['o',String.raw`Please input a 4-digit hexadecimal number: fFff
+The decimal value is: 65535
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>用 <code>%s</code> 读进一个 <code>char</code> 数组，然后逐位处理：每一位的权值是 <code>16^(3-位置)</code>，换成递推就是 <code>value = value * 16 + digit</code>。</p><p>关键是把字符变成数值：<code>'0'~'9'</code> 减 <code>'0'</code>；<code>'a'~'f'</code> 减 <code>'a'</code> 再加 10；<code>'A'~'F'</code> 同理。其他字符就是非法输入。</p><p>样例 1 的 <code>fffg</code> 里 <code>g</code> 不合法，要报错而不是算出一个数。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    char hex[16];
+    int i, value = 0, digit, valid = 1;
+
+    printf("Please input a 4-digit hexadecimal number: ");
+    scanf("%s", hex);
+
+    for (i = 0; i < 4; i++) {
+        char c = hex[i];
+
+        if (c >= '0' && c <= '9')      digit = c - '0';
+        else if (c >= 'a' && c <= 'f') digit = c - 'a' + 10;
+        else if (c >= 'A' && c <= 'F') digit = c - 'A' + 10;
+        else { valid = 0; break; }
+
+        value = value * 16 + digit;
+    }
+
+    if (!valid)
+        printf("Warning! Invalid hexadecimal number.\n");
+    else
+        printf("The decimal value is: %d\n", value);
+
+    return 0;
+}
+
+/* ffff -> ((15*16+15)*16+15)*16+15 = 65535
+   fFff -> mixed case is fine, 'F' and 'f' are both 15
+   fffg -> 'g' hits the invalid branch            */`,
+  notes:[
+    String.raw`<code>value = value * 16 + digit</code> 是“霍纳法则”，从左到右扫描即可，不必求幂。`,
+    String.raw`字符 <code>'0'</code> 的 ASCII 是 48，所以 <code>'7' - '0'</code> 正好等于 7。`,
+    String.raw`<code>scanf("%s", hex)</code> 读字符串时数组名本身已经是地址，不用加 <code>&amp;</code>。`
+  ]
+},
+{
+  n:27, cat:'Functions', title:'ASCII Difference Function',
+  body:[
+    ['p',String.raw`Write a program to calculate the ASCII difference between two characters.`],
+    ['l','Non-Functional Requirements'],
+    ['p',String.raw`Write two functions: <code>main</code> funtion and a sub-function <code>differenceASCIICode</code>.`],
+    ['p',String.raw`The <code>differenceASCIICode</code> function will count and return the difference between the ASCII code of any two characters accordingly.`],
+    ['p',String.raw`For example, <code>differenceASCIICode('a', 'b')</code> returns <code>-1</code>; if <code>differenceASCIICode('b', 'a')</code> returns <code>1</code>; <code>differenceASCIICode('a', 'a')</code> returns <code>0</code>. The <code>main</code> function will read two characters from keyboard and call the <code>differenceASCIICode</code> function to find the difference between the inputted two characters. The <code>main</code> function will also print out result according to the return value from the <code>differenceASCIICode</code> function.`],
+    ['p',String.raw`For example, if input is <code>a c</code>, then the output could be the difference between character <code>'a'</code> and <code>'c'</code> is <code>-2</code>.`],
+    ['l','I/O Samples'],
+    ['p',String.raw`<b>Sample 1</b>`],
+    ['o',String.raw`Please enter two characters: a b
+The difference between character 'a' and 'b' is -1.
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 2</b>`],
+    ['o',String.raw`Please enter two characters: d a
+The difference between character 'd' and 'a' is 3.
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 3</b>`],
+    ['o',String.raw`Please enter two characters: m m
+The difference between character 'm' and 'm' is 0.
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>函数只有一句话：<code>return a - b;</code> —— 字符参与算术运算时会自动变成它的 ASCII 码。</p><p>为什么 <code>('a','b')</code> 是 -1 而不是 1？因为第一个参数减第二个，顺序不能反。</p><p><code>main</code> 里读两个字符时，格式串用 <code>" %c %c"</code> 更稳，能跳过多余空白。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int differenceASCIICode(char a, char b);
+
+int main(void) {
+    char c1, c2;
+    int diff;
+
+    printf("Please enter two characters: ");
+    scanf(" %c %c", &c1, &c2);
+
+    diff = differenceASCIICode(c1, c2);
+    printf("The difference between character '%c' and '%c' is %d.\n", c1, c2, diff);
+
+    return 0;
+}
+
+int differenceASCIICode(char a, char b) {
+    return a - b;      /* 'a' - 'b' == 97 - 98 == -1 */
+}
+
+/* 'a','b' -> -1     'b','a' -> 1     'a','a' -> 0     'd','a' -> 3 */`,
+  notes:[
+    String.raw`<code>char</code> 在表达式里会被提升为 <code>int</code>，所以可以直接相减得到 ASCII 差值。`,
+    String.raw`函数返回类型写 <code>int</code> 而不是 <code>char</code>，因为差值可能超出 char 的范围。`,
+    String.raw`调用前需要声明（函数原型），或者把函数定义写在 <code>main</code> 之前。`
+  ]
+}
+];
+
+/* =========================================================
+   rendering
+   ========================================================= */
+const stage      = document.getElementById('stage');
+const chipsEl    = document.getElementById('chips');
+const counterEl  = document.getElementById('counter');
+const pbar       = document.getElementById('pbar');
+const prevBtn    = document.getElementById('prevBtn');
+const nextBtn    = document.getElementById('nextBtn');
+const scrim      = document.getElementById('scrim');
+const palGrid    = document.getElementById('palGrid');
+const searchEl   = document.getElementById('search');
+
+const KW = new Set('auto break case char const continue default do double else enum extern float for goto if int long register return short signed sizeof static struct switch typedef union unsigned void volatile while'.split(' '));
+const pad = n => String(n).padStart(2,'0');
+const DONE_KEY = 'c-exercises-1-done';
+let done = new Set();
+try { done = new Set(JSON.parse(localStorage.getItem(DONE_KEY) || '[]')); } catch(e) { done = new Set(); }
+
+function esc(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function hl(src){
+  const re = /(\/\*[\s\S]*?\*\/)|(\/\/[^\n]*)|("(?:[^"\\]|\\.)*")|('(?:[^'\\]|\\.)*')|(^[ \t]*#[ \t]*\w+)|(\b\d+(?:\.\d+)?\b)|([A-Za-z_]\w*)/gm;
+  let out = '', last = 0, m;
+  while ((m = re.exec(src)) !== null) {
+    out += esc(src.slice(last, m.index));
+    const t = m[0];
+    let cls = '';
+    if (m[1] || m[2]) cls = 'cm';
+    else if (m[3]) cls = 'st';
+    else if (m[4]) cls = 'ch';
+    else if (m[5]) cls = 'pp';
+    else if (m[6]) cls = 'nu';
+    else if (m[7]) cls = KW.has(t) ? 'kw' : '';
+    out += cls ? '<span class="' + cls + '">' + esc(t) + '</span>' : esc(t);
+    last = m.index + t.length;
+  }
+  out += esc(src.slice(last));
+  return out;
+}
+
+function block([type, val]){
+  if (type === 'p')   return '<p>' + val + '</p>';
+  if (type === 'l')   return '<div class="label">' + val + '</div>';
+  if (type === 'c')   return '<pre><code>' + hl(val) + '</code></pre>';
+  if (type === 'o')   return '<pre class="out">' + esc(val).replace(/(Press any key to continue\.\.\.)/g,'<span class="dim">$1</span>') + '</pre>';
+  if (type === 'img') return '<div class="figure"><img src="' + val + '" alt="diagram" loading="lazy"></div>';
+  return '';
+}
+
+function render(i, dir){
+  const d = DATA[i];
+  const body = d.body.map(block).join('');
+  stage.innerHTML = `
+  <article class="card glass">
+    <div class="card-top">
+      <div class="meta">
+        <span class="num">EX ${pad(d.n)}</span>
+        <span class="sep"></span>
+        <span class="cat">${d.cat}</span>
+      </div>
+      <h2 class="title"><span class="grad">${d.title}</span></h2>
+    </div>
+    <div class="card-body" id="cardBody">
+      <div class="q">${body}</div>
+
+      <div class="actions">
+        <button class="btn" data-act="hint">
+          <svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.4.3.5.7.5 1.1V16h6v-1c0-.4.1-.8.5-1.1A6 6 0 0 0 12 3z"/></svg>
+          Hint <span class="tag-zh">提示</span>
+        </button>
+        <button class="btn primary" data-act="ans">
+          <svg viewBox="0 0 24 24"><path d="M4 12.5l5 5L20 6.5"/></svg>
+          Answer <span class="tag-zh">答案</span>
+        </button>
+      </div>
+
+      <div class="panel hint" id="hintPanel">
+        <div class="inner"><div class="panel-card">
+          <div class="panel-head"><div class="panel-title"><span class="dotw"></span>Hint · 提示</div></div>
+          ${d.hint}
+        </div></div>
+      </div>
+
+      <div class="panel ans" id="ansPanel">
+        <div class="inner"><div class="panel-card">
+          <div class="panel-head">
+            <div class="panel-title"><span class="dotw"></span>Answer · 参考答案</div>
+            <button class="copy" data-act="copy">Copy</button>
+          </div>
+          <pre><code id="solCode">${hl(d.sol)}</code></pre>
+          <ul>${d.notes.map(x => '<li>' + x + '</li>').join('')}</ul>
+        </div></div>
+      </div>
+    </div>
+    <div class="card-foot">
+      <button class="foot-btn" data-act="prev" ${i===0?'disabled':''}>
+        <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg> Previous
+      </button>
+      <span class="foot-mid">${pad(d.n)} — ${DATA.length}</span>
+      <button class="foot-btn" data-act="next" ${i===DATA.length-1?'disabled':''}>
+        Next <svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+  </article>`;
+
+  const card = stage.firstElementChild;
+  card.classList.add('anim');
+  if (dir < 0) card.classList.add('back');
+
+  card.addEventListener('pointermove', e => {
+    const r = card.getBoundingClientRect();
+    card.style.setProperty('--mx', ((e.clientX - r.left) / r.width * 100) + '%');
+    card.style.setProperty('--my', ((e.clientY - r.top) / r.height * 100) + '%');
+  });
+
+  card.querySelector('#cardBody').scrollTop = 0;
+}
+
+/* panels */
+function toggle(panel, btn){
+  const open = panel.classList.toggle('open');
+  btn.classList.toggle('on', open);
+  if (!open) return;
+  setTimeout(() => {
+    const body = panel.closest('.card-body');
+    if (!body) return;
+    const r1 = body.getBoundingClientRect(), r2 = panel.getBoundingClientRect();
+    body.scrollTo({ top: body.scrollTop + (r2.top - r1.top) - 16, behavior:'smooth' });
+  }, 280);
+}
+
+/* state */
+let cur = 0;
+try {
+  const saved = parseInt(localStorage.getItem('c-exercises-1-cur') || '0', 10);
+  if (saved >= 0 && saved < DATA.length) cur = saved;
+} catch(e) {}
+
+/* deep link: Exercises.html#12  (also ?n=12 when hosted) */
+try {
+  let qn = parseInt((location.hash || '').replace(/[^\d]/g, ''), 10);
+  if (!qn) qn = parseInt(new URLSearchParams(location.search).get('n') || '', 10);
+  if (qn >= 1 && qn <= DATA.length) cur = qn - 1;
+} catch(e) {}
+
+function paintChrome(){
+  counterEl.textContent = pad(cur+1) + ' / ' + DATA.length;
+  pbar.style.width = ((cur+1) / DATA.length * 100) + '%';
+  [...chipsEl.children].forEach((c, i) => {
+    c.classList.toggle('on', i === cur);
+    c.classList.toggle('done', done.has(i+1));
+  });
+  const active = chipsEl.children[cur];
+  if (active) active.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'});
+  prevBtn.disabled = cur === 0;
+  nextBtn.disabled = cur === DATA.length - 1;
+  try { localStorage.setItem('c-exercises-1-cur', cur); } catch(e) {}
+}
+
+function go(i, dir){
+  if (i < 0 || i >= DATA.length) return;
+  const d = dir !== undefined ? dir : (i > cur ? 1 : -1);
+  cur = i;
+  render(cur, d);
+  paintChrome();
+  buildPalette(searchEl.value);
+}
+
+/* chips */
+DATA.forEach((d, i) => {
+  const b = document.createElement('button');
+  b.className = 'chip';
+  b.textContent = d.n;
+  b.title = 'Exercise ' + d.n + ' · ' + d.title;
+  b.addEventListener('click', () => go(i));
+  chipsEl.appendChild(b);
+});
+
+/* palette */
+function buildPalette(q){
+  const key = (q || '').trim().toLowerCase();
+  const list = DATA.filter(d =>
+    !key || String(d.n) === key ||
+    d.title.toLowerCase().includes(key) ||
+    d.cat.toLowerCase().includes(key)
+  );
+  palGrid.innerHTML = list.length ? list.map(d => `
+    <button class="tile ${d.n-1===cur?'on':''}" data-i="${d.n-1}">
+      <span class="tn">${pad(d.n)}</span>
+      <span class="tw"><span class="tt">${d.title}</span><span class="tc">${d.cat}</span></span>
+    </button>`).join('') : '<div class="empty">No exercise matches “' + esc(q) + '”.</div>';
+}
+
+function openPalette(){
+  buildPalette('');
+  scrim.classList.add('open');
+  setTimeout(() => searchEl.focus(), 120);
+}
+function closePalette(){
+  scrim.classList.remove('open');
+  searchEl.value = '';
+  buildPalette('');
+}
+
+/* events */
+document.getElementById('openPalette').addEventListener('click', openPalette);
+prevBtn.addEventListener('click', () => go(cur - 1, -1));
+nextBtn.addEventListener('click', () => go(cur + 1, 1));
+scrim.addEventListener('click', e => { if (e.target === scrim) closePalette(); });
+searchEl.addEventListener('input', e => buildPalette(e.target.value));
+palGrid.addEventListener('click', e => {
+  const t = e.target.closest('.tile');
+  if (!t) return;
+  go(parseInt(t.dataset.i, 10));
+  closePalette();
+});
+
+stage.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]');
+  if (!b) return;
+  const act = b.dataset.act;
+  if (act === 'hint') toggle(document.getElementById('hintPanel'), b);
+  if (act === 'ans') {
+    toggle(document.getElementById('ansPanel'), b);
+    if (!done.has(cur+1)) {
+      done.add(cur+1);
+      try { localStorage.setItem(DONE_KEY, JSON.stringify([...done])); } catch(err) {}
+      paintChrome();
+    }
+  }
+  if (act === 'copy') {
+    const code = DATA[cur].sol;
+    navigator.clipboard.writeText(code).then(() => {
+      b.textContent = 'Copied';
+      b.classList.add('ok');
+      setTimeout(() => { b.textContent = 'Copy'; b.classList.remove('ok'); }, 1400);
+    }).catch(() => {});
+  }
+  if (act === 'prev') go(cur - 1, -1);
+  if (act === 'next') go(cur + 1, 1);
+});
+
+document.addEventListener('keydown', e => {
+  const typing = e.target.tagName === 'INPUT';
+  if (e.key === 'Escape' && scrim.classList.contains('open')) { closePalette(); return; }
+  if (typing) return;
+  if (e.key === '/') { e.preventDefault(); openPalette(); return; }
+  if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); go(cur + 1, 1); }
+  if (e.key === 'ArrowLeft'  || e.key === 'PageUp')   { e.preventDefault(); go(cur - 1, -1); }
+  if (e.key === 'h' || e.key === 'H') {
+    const p = document.getElementById('hintPanel'), b = stage.querySelector('[data-act="hint"]');
+    if (p) toggle(p, b);
+  }
+  if (e.key === 'a' || e.key === 'A') {
+    const p = document.getElementById('ansPanel'), b = stage.querySelector('[data-act="ans"]');
+    if (p) { toggle(p, b); done.add(cur+1); try { localStorage.setItem(DONE_KEY, JSON.stringify([...done])); } catch(err) {} paintChrome(); }
+  }
+});
+
+/* boot */
+render(cur, 1);
+paintChrome();
+buildPalette('');
+</script>
+</body>
+</html>
