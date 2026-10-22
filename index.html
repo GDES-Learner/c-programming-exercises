@@ -1,0 +1,2145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Exercises 1 · Foundations of C Programming</title>
+<style>
+/* ============ tokens ============ */
+:root{
+  --ink:#eef2fb;
+  --muted:rgba(226,232,248,.60);
+  --faint:rgba(226,232,248,.38);
+  --stroke:rgba(255,255,255,.10);
+  --stroke-hi:rgba(255,255,255,.22);
+  --glass:rgba(255,255,255,.055);
+  --glass-2:rgba(255,255,255,.085);
+  --accent:#8fb6ff;
+  --accent-2:#c3a4ff;
+  --mint:#8ef0d3;
+  --radius:28px;
+  --ease:cubic-bezier(.22,1,.36,1);
+  --shadow:0 40px 90px -40px rgba(0,0,0,.95), 0 8px 30px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  background:#04050a;
+  background-image:radial-gradient(1300px 900px at 50% -12%,#101a33 0%,#080b14 48%,#04050a 100%);
+  color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI Variable Display","Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  -webkit-font-smoothing:antialiased;
+  letter-spacing:-.011em;
+  overflow:hidden;
+}
+::selection{background:rgba(143,182,255,.35)}
+
+/* ============ ambient background ============ */
+.bg{position:fixed;inset:-20vmax;z-index:0;filter:blur(64px) saturate(155%) brightness(1.06);opacity:1;pointer-events:none}
+.blob{position:absolute;border-radius:50%;mix-blend-mode:screen;will-change:transform}
+.b1{width:52vmax;height:52vmax;left:-8vmax;top:-14vmax;background:radial-gradient(circle at 30% 30%,rgba(96,142,255,.85),transparent 62%);animation:drift1 26s var(--ease) infinite alternate}
+.b2{width:44vmax;height:44vmax;right:-10vmax;top:-6vmax;background:radial-gradient(circle at 60% 40%,rgba(178,120,255,.66),transparent 60%);animation:drift2 32s var(--ease) infinite alternate}
+.b3{width:56vmax;height:56vmax;left:18vmax;bottom:-24vmax;background:radial-gradient(circle at 50% 50%,rgba(58,214,202,.52),transparent 62%);animation:drift3 38s var(--ease) infinite alternate}
+.b4{width:34vmax;height:34vmax;right:6vmax;bottom:-10vmax;background:radial-gradient(circle at 50% 50%,rgba(255,116,190,.42),transparent 62%);animation:drift1 30s var(--ease) infinite alternate-reverse}
+@keyframes drift1{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(8vmax,6vmax,0) scale(1.12)}}
+@keyframes drift2{from{transform:translate3d(0,0,0) scale(1.05)}to{transform:translate3d(-7vmax,9vmax,0) scale(.95)}}
+@keyframes drift3{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(6vmax,-8vmax,0) scale(1.15)}}
+.grain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.055;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E")}
+.vignette{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(125% 95% at 50% 0%,transparent 42%,rgba(2,3,8,.58) 100%)}
+
+/* ============ glass primitives ============ */
+.glass{
+  position:relative;
+  background:linear-gradient(168deg,rgba(255,255,255,.125),rgba(255,255,255,.045) 46%,rgba(255,255,255,.07));
+  -webkit-backdrop-filter:blur(34px) saturate(190%);
+  backdrop-filter:blur(34px) saturate(190%);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.26),inset 0 -1px 0 rgba(255,255,255,.06),inset 0 0 60px rgba(255,255,255,.03);
+}
+.glass::before{
+  content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;pointer-events:none;
+  background:linear-gradient(155deg,rgba(255,255,255,.55),rgba(255,255,255,.10) 28%,rgba(255,255,255,0) 52%,rgba(255,255,255,.06) 74%,rgba(255,255,255,.28));
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude;
+}
+
+/* ============ top bar ============ */
+.topbar{position:fixed;top:0;left:0;right:0;z-index:40;padding:14px clamp(12px,3vw,34px) 0}
+.topbar-in{
+  max-width:1180px;margin:0 auto;height:62px;display:flex;align-items:center;gap:18px;
+  padding:0 14px 0 18px;border-radius:22px;
+  background:linear-gradient(180deg,rgba(22,26,38,.62),rgba(14,17,26,.44));
+  -webkit-backdrop-filter:blur(30px) saturate(200%);backdrop-filter:blur(30px) saturate(200%);
+  box-shadow:0 22px 60px -28px rgba(0,0,0,.9),inset 0 1px 0 rgba(255,255,255,.18),inset 0 -1px 0 rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.09);
+  position:relative;overflow:hidden;
+}
+.topbar-in::after{content:"";position:absolute;left:0;right:0;top:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);opacity:.7}
+.brand{display:flex;align-items:center;gap:11px;min-width:0}
+.orb{
+  width:26px;height:26px;border-radius:50%;flex:none;
+  background:conic-gradient(from 210deg,#8fb6ff,#c3a4ff,#8ef0d3,#8fb6ff);
+  box-shadow:0 0 22px rgba(143,182,255,.55),inset 0 0 8px rgba(255,255,255,.6);
+  animation:spin 14s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.brand-txt{display:flex;flex-direction:column;line-height:1.15;min-width:0}
+.brand-txt strong{font-size:13.5px;font-weight:600;letter-spacing:-.01em;white-space:nowrap}
+.brand-txt span{font-size:10.5px;color:var(--faint);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+
+.chips{display:flex;align-items:center;gap:4px;overflow-x:auto;flex:1;min-width:0;padding:4px 2px;scrollbar-width:none;mask-image:linear-gradient(90deg,transparent,#000 12px,#000 calc(100% - 18px),transparent)}
+.chips::-webkit-scrollbar{display:none}
+.chip{
+  flex:none;width:30px;height:30px;border-radius:10px;border:1px solid transparent;background:transparent;
+  color:var(--faint);font:600 12px/1 ui-monospace,"SF Mono",Consolas,monospace;cursor:pointer;
+  transition:all .35s var(--ease);position:relative;display:grid;place-items:center;
+}
+.chip:hover{color:var(--ink);background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.14)}
+.chip.on{color:#0a0d15;background:linear-gradient(160deg,#e8eeff,#b9c8ec);box-shadow:0 6px 18px -6px rgba(180,200,255,.9),inset 0 1px 0 #fff;border-color:transparent}
+.chip.done::after{content:"";position:absolute;bottom:3px;width:3px;height:3px;border-radius:50%;background:var(--mint);opacity:.9}
+.chip.on.done::after{background:#2b4a44}
+
+.tools{display:flex;align-items:center;gap:8px;flex:none}
+.counter{font:500 11.5px/1 ui-monospace,Consolas,monospace;color:var(--faint);letter-spacing:.08em;margin-right:2px}
+.tool{
+  width:36px;height:36px;border-radius:12px;border:1px solid rgba(255,255,255,.10);
+  background:rgba(255,255,255,.055);color:var(--ink);cursor:pointer;display:grid;place-items:center;
+  transition:all .35s var(--ease);backdrop-filter:blur(10px);
+}
+.tool:hover{background:rgba(255,255,255,.14);border-color:var(--stroke-hi);transform:translateY(-1px)}
+.tool:active{transform:scale(.94)}
+.tool svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.tool:disabled{opacity:.3;pointer-events:none}
+
+/* progress hairline */
+.pbar-wrap{position:fixed;left:0;right:0;top:0;height:2px;z-index:45;background:transparent}
+.pbar{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent-2),var(--mint));box-shadow:0 0 14px rgba(143,182,255,.8);transition:width .6s var(--ease)}
+
+/* ============ stage / card ============ */
+main{position:relative;z-index:10;height:100dvh;padding:98px clamp(12px,3vw,34px) 30px;display:flex;justify-content:center}
+.stage{width:100%;max-width:1000px;height:100%;display:flex;min-width:0}
+.card{
+  width:100%;display:flex;flex-direction:column;min-height:0;min-width:0;overflow:hidden;
+  padding:0;position:relative;
+}
+.card::after{
+  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .5s;
+  background:radial-gradient(420px circle at var(--mx,50%) var(--my,0%),rgba(255,255,255,.10),transparent 62%);
+}
+.card:hover::after{opacity:1}
+.anim{animation:cardIn .62s var(--ease) both}
+.anim.back{animation-name:cardInBack}
+@keyframes cardIn{from{opacity:0;transform:translate3d(28px,10px,0) scale(.985)}to{opacity:1;transform:none}}
+@keyframes cardInBack{from{opacity:0;transform:translate3d(-28px,10px,0) scale(.985)}to{opacity:1;transform:none}}
+
+.card-top{padding:26px clamp(20px,3.2vw,38px) 16px;flex:none;position:relative}
+.meta{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.num{
+  font:600 12px/1 ui-monospace,"SF Mono",Consolas,monospace;letter-spacing:.14em;
+  color:transparent;background:linear-gradient(120deg,#a8c4ff,#d3bcff 60%,#a6f2dd);-webkit-background-clip:text;background-clip:text;
+  padding:5px 9px;border-radius:9px;border:1px solid rgba(255,255,255,.12);background-color:rgba(255,255,255,.05);
+}
+.cat{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+.meta .sep{width:3px;height:3px;border-radius:50%;background:var(--faint)}
+h2.title{margin:0;font-size:clamp(21px,2.5vw,29px);font-weight:600;letter-spacing:-.022em;line-height:1.2}
+h2.title .grad{background:linear-gradient(180deg,#fff,#c6d2ea);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+.card-body{
+  flex:1;min-height:0;min-width:0;overflow-y:auto;overscroll-behavior:contain;
+  padding:4px clamp(20px,3.2vw,38px) 26px;
+  -webkit-mask-image:linear-gradient(180deg,transparent 0,#000 12px,#000 calc(100% - 26px),transparent 100%);
+  mask-image:linear-gradient(180deg,transparent 0,#000 12px,#000 calc(100% - 26px),transparent 100%);
+  scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.16) transparent;
+  padding-top:12px;
+}
+.card-body::-webkit-scrollbar{width:8px}
+.card-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:99px;border:2px solid transparent;background-clip:padding-box}
+.card-body::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.24);background-clip:padding-box}
+
+/* question content */
+.q{min-width:0}
+.q p{margin:0 0 12px;font-size:15px;line-height:1.72;color:rgba(238,242,251,.92)}
+.q p:last-child{margin-bottom:0}
+.q code,.q .k{
+  font:500 12.8px/1.5 ui-monospace,"SF Mono",Consolas,monospace;
+  background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.10);
+  padding:1.5px 5px;border-radius:6px;color:#dce6ff;white-space:nowrap;
+}
+pre code,.q pre code,.panel-card pre code{
+  white-space:pre;background:none;border:0;padding:0;border-radius:0;color:inherit;
+  font:inherit;letter-spacing:0;
+}
+.label{display:flex;align-items:center;gap:8px;margin:20px 0 9px;font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--faint)}
+.label::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(255,255,255,.14),transparent)}
+.label.first{margin-top:8px}
+
+pre{margin:0 0 14px;border-radius:16px;padding:16px 18px;overflow:auto;max-width:100%;
+  background:linear-gradient(180deg,rgba(9,12,20,.72),rgba(6,8,14,.55));
+  border:1px solid rgba(255,255,255,.075);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 16px 34px -24px rgba(0,0,0,.9);
+  font:400 12.9px/1.72 ui-monospace,"SF Mono","Cascadia Code",Consolas,monospace;
+  tab-size:4;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.14) transparent;
+}
+pre::-webkit-scrollbar{height:8px;width:8px}
+pre::-webkit-scrollbar-thumb{background:rgba(255,255,255,.13);border-radius:99px}
+pre.out{color:#a9b6d0;background:linear-gradient(180deg,rgba(8,11,18,.6),rgba(6,8,14,.42));border-style:dashed;border-color:rgba(255,255,255,.09)}
+.figure{margin:4px auto 16px;display:flex;justify-content:center;padding:12px;border-radius:16px;max-width:620px;
+  background:rgba(255,255,255,.94);border:1px solid rgba(255,255,255,.2);
+  box-shadow:0 18px 40px -26px rgba(0,0,0,.95),inset 0 1px 0 #fff}
+.figure img{max-width:100%;max-height:min(42vh,380px);width:auto;height:auto;display:block;border-radius:6px}
+pre.out .dim{color:rgba(169,182,208,.45);font-style:italic}
+
+/* syntax */
+.kw{color:#c0a6ff}.st{color:#8fe6b6}.ch{color:#f3c98b}.cm{color:rgba(160,175,200,.62);font-style:italic}
+.pp{color:#84b6ff}.nu{color:#f7a8c8}.fn{color:#9fd0ff}
+
+/* actions */
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin:22px 0 0}
+.btn{
+  position:relative;display:inline-flex;align-items:center;gap:8px;border-radius:14px;cursor:pointer;
+  padding:11px 18px;font-size:13.5px;font-weight:600;letter-spacing:-.01em;color:var(--ink);
+  border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.07);
+  transition:all .4s var(--ease);backdrop-filter:blur(12px);
+}
+.btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;opacity:.85}
+.btn:hover{background:rgba(255,255,255,.14);transform:translateY(-1px);box-shadow:0 14px 30px -18px rgba(0,0,0,.9)}
+.btn:active{transform:scale(.97)}
+.btn.primary{
+  color:#0a0e18;border-color:transparent;
+  background:linear-gradient(160deg,#f2f6ff,#b9cdf5 70%,#a9c6ff);
+  box-shadow:0 14px 34px -16px rgba(160,190,255,.75),inset 0 1px 0 #fff;
+}
+.btn.primary:hover{filter:brightness(1.05)}
+.btn.on{background:linear-gradient(160deg,rgba(255,255,255,.22),rgba(255,255,255,.10));border-color:var(--stroke-hi)}
+.btn.primary.on{
+  background:linear-gradient(160deg,#fff,#c9d9f8 70%,#b3ccff);
+  box-shadow:0 0 0 3px rgba(150,185,255,.22),0 14px 34px -16px rgba(160,190,255,.8),inset 0 1px 0 #fff;
+}
+.btn.on svg{opacity:1}
+.btn .tag-zh{font-size:11px;font-weight:500;color:var(--faint);letter-spacing:.02em}
+.btn.primary .tag-zh{color:rgba(10,14,24,.5)}
+
+.panel{display:grid;grid-template-rows:0fr;opacity:0;transition:grid-template-rows .58s var(--ease),opacity .45s var(--ease),margin-top .4s var(--ease);margin-top:0}
+.panel>.inner{overflow:hidden;min-height:0}
+.panel.open{grid-template-rows:1fr;opacity:1;margin-top:14px}
+.panel-card{
+  border-radius:18px;padding:18px 20px;
+  background:linear-gradient(180deg,rgba(255,255,255,.075),rgba(255,255,255,.028));
+  border:1px solid rgba(255,255,255,.11);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.16);
+  transform:translateY(-6px);transition:transform .58s var(--ease);
+}
+.panel.open .panel-card{transform:none}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.panel-title{display:flex;align-items:center;gap:9px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.panel-title .dotw{width:7px;height:7px;border-radius:50%;box-shadow:0 0 12px currentColor}
+.hint .dotw{background:#ffd98a;color:#ffd98a}
+.ans .dotw{background:var(--mint);color:var(--mint)}
+.panel-card p{margin:0 0 10px;font-size:14px;line-height:1.78;color:rgba(238,242,251,.9)}
+.panel-card p:last-child{margin-bottom:0}
+.panel-card ul{margin:10px 0 0;padding-left:18px}
+.panel-card li{font-size:13.6px;line-height:1.75;color:rgba(232,238,250,.82);margin-bottom:7px}
+.panel-card ul:last-child li:last-child{margin-bottom:0}
+.panel-card code{font:500 12.6px/1.5 ui-monospace,Consolas,monospace;background:rgba(255,255,255,.1);padding:1.5px 5px;border-radius:6px;color:#dce6ff}
+.copy{
+  font:600 10.5px/1 ui-monospace,Consolas,monospace;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--faint);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+  padding:6px 10px;border-radius:8px;cursor:pointer;transition:all .3s var(--ease);
+}
+.copy:hover{color:var(--ink);background:rgba(255,255,255,.14)}
+.copy.ok{color:#0a1410;background:var(--mint);border-color:transparent}
+
+/* footer nav */
+.card-foot{flex:none;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px clamp(20px,3.2vw,38px);border-top:1px solid rgba(255,255,255,.07);background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.05))}
+.foot-btn{display:inline-flex;align-items:center;gap:8px;background:transparent;border:0;color:var(--muted);font:500 13px/1 inherit;cursor:pointer;padding:8px 4px;transition:color .3s var(--ease),transform .3s var(--ease)}
+.foot-btn:hover{color:var(--ink)}
+.foot-btn:disabled{opacity:.28;pointer-events:none}
+.foot-btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.foot-mid{font:500 11px/1 ui-monospace,Consolas,monospace;letter-spacing:.16em;color:var(--faint)}
+
+/* ============ palette overlay ============ */
+.scrim{position:fixed;inset:0;z-index:60;display:grid;place-items:start center;padding:clamp(60px,12vh,120px) 16px 24px;
+  background:rgba(3,5,10,.5);-webkit-backdrop-filter:blur(22px) saturate(140%);backdrop-filter:blur(22px) saturate(140%);
+  opacity:0;pointer-events:none;transition:opacity .45s var(--ease)}
+.scrim.open{opacity:1;pointer-events:auto}
+.palette{width:min(880px,100%);max-height:min(76vh,760px);display:flex;flex-direction:column;border-radius:26px;padding:16px;
+  background:linear-gradient(180deg,rgba(26,30,44,.95),rgba(11,14,22,.94));
+  border:1px solid rgba(255,255,255,.14);
+  box-shadow:0 50px 120px -40px #000,inset 0 1px 0 rgba(255,255,255,.22);
+  transform:translateY(-14px) scale(.985);transition:transform .5s var(--ease)}
+.scrim.open .palette{transform:none}
+.pal-top{display:flex;align-items:center;gap:12px;padding:6px 8px 14px}
+.search{flex:1;display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:13px;padding:0 14px;height:44px}
+.search svg{width:16px;height:16px;stroke:var(--faint);fill:none;stroke-width:1.8;stroke-linecap:round}
+.search input{flex:1;background:none;border:0;outline:none;color:var(--ink);font-size:14.5px;letter-spacing:-.01em}
+.search input::placeholder{color:var(--faint)}
+.kbd{font:600 10px/1 ui-monospace,Consolas,monospace;color:var(--faint);border:1px solid rgba(255,255,255,.14);border-radius:5px;padding:3px 6px}
+.pal-grid{overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px;padding:4px 4px 8px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.15) transparent}
+.pal-grid::-webkit-scrollbar{width:8px}
+.pal-grid::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:99px}
+.tile{display:flex;gap:12px;align-items:flex-start;text-align:left;padding:12px 13px;border-radius:14px;cursor:pointer;
+  background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08);transition:all .32s var(--ease);color:var(--ink)}
+.tile:hover{background:rgba(255,255,255,.11);border-color:rgba(255,255,255,.2);transform:translateY(-2px)}
+.tile.on{background:linear-gradient(160deg,rgba(180,205,255,.22),rgba(255,255,255,.06));border-color:rgba(190,210,255,.4)}
+.tile .tn{font:600 11px/1 ui-monospace,Consolas,monospace;color:var(--faint);padding-top:2px;min-width:18px;flex:none}
+.tile .tw{display:block;min-width:0}
+.tile .tt{display:block;font-size:13.2px;font-weight:550;line-height:1.35;letter-spacing:-.012em}
+.tile .tc{display:block;font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:rgba(226,232,248,.42);margin-top:5px}
+.empty{padding:26px;text-align:center;color:var(--faint);font-size:13px}
+
+/* keyboard hint */
+.legend{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);z-index:20;display:flex;gap:16px;font-size:10.5px;color:rgba(226,232,248,.30);letter-spacing:.06em;pointer-events:none}
+.legend b{font-weight:600;color:rgba(226,232,248,.55)}
+@media (max-width:1120px){.legend{display:none}}
+@media (max-width:900px){.chips{display:none}.brand-txt span{display:none}}
+@media (max-width:720px){
+  .topbar{padding:10px 10px 0}
+  .topbar-in{height:56px;border-radius:18px;gap:10px}
+  main{padding:80px 10px 12px}
+  .card{max-height:none}
+  .card-top{padding:20px 18px 10px}
+  .card-body{padding:8px 18px 20px;overflow:visible}
+  .card-foot{padding:12px 18px}
+  .q p{font-size:14.4px}
+  pre{font-size:12px;padding:14px}
+  .counter{display:none}
+  body{overflow:auto}
+  main{height:auto;min-height:100dvh}
+  .stage{height:auto}
+  .card{min-height:0}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.001s!important;transition-duration:.08s!important}
+}
+</style>
+</head>
+<body>
+
+<div class="bg" aria-hidden="true">
+  <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div><div class="blob b4"></div>
+</div>
+<div class="grain" aria-hidden="true"></div>
+<div class="vignette" aria-hidden="true"></div>
+
+<div class="pbar-wrap"><div class="pbar" id="pbar"></div></div>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <div class="brand">
+      <span class="orb"></span>
+      <div class="brand-txt"><strong>Exercises 1</strong><span>Foundations of C</span></div>
+    </div>
+    <nav class="chips" id="chips" aria-label="Exercise navigation"></nav>
+    <div class="tools">
+      <span class="counter" id="counter">01 / 27</span>
+      <button class="tool" id="openPalette" title="Contents (/)">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.6"/><rect x="14" y="3" width="7" height="7" rx="1.6"/><rect x="3" y="14" width="7" height="7" rx="1.6"/><rect x="14" y="14" width="7" height="7" rx="1.6"/></svg>
+      </button>
+      <button class="tool" id="prevBtn" title="Previous (←)">
+        <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <button class="tool" id="nextBtn" title="Next (→)">
+        <svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main><div class="stage" id="stage"></div></main>
+
+<div class="legend" aria-hidden="true">
+  <span><b>← →</b> navigate</span><span><b>H</b> hint</span><span><b>A</b> answer</span><span><b>/</b> contents</span>
+</div>
+
+<div class="scrim" id="scrim">
+  <div class="palette" role="dialog" aria-modal="true" aria-label="Exercise contents">
+    <div class="pal-top">
+      <div class="search">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input id="search" type="text" placeholder="Search exercises, topics…" autocomplete="off" spellcheck="false" />
+        <span class="kbd">ESC</span>
+      </div>
+    </div>
+    <div class="pal-grid" id="palGrid"></div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   DATA — 27 exercises, answers written for this page
+   ========================================================= */
+const DATA = [
+{
+  n:1, cat:'Data Types & Overflow', title:'Type Sizes with sizeof',
+  body:[
+    ['p',String.raw`The operator <code>sizeof</code> gives the number of bytes used for storing a datum of certain type in computer. For example, the result of <code>sizeof(int)</code> is <code>4</code> because 4 bytes are used to save an int type datum. The following statement`],
+    ['c',String.raw`printf("Number of bytes used to store an int type variable is %d\n", sizeof(int));`],
+    ['p',String.raw`will produce the following output:`],
+    ['o',String.raw`Number of bytes used to store an int type variable is 4`],
+    ['p',String.raw`Please write a program to produce the output in the following format:`],
+    ['o',String.raw`Number of bytes used to store a char type variable is __
+Number of bytes used to store a short int type variable is __
+Number of bytes used to store an int type variable is __
+Number of bytes used to store a float type variable is __
+Number of bytes used to store a long int type variable is __
+Number of bytes used to store a double type variable is __`]
+  ],
+  hint:String.raw`<p><code>sizeof</code> 不是函数，而是编译期运算符：既可以写 <code>sizeof(int)</code>，也可以写 <code>sizeof x</code>。它的结果单位是“字节”。</p><p>题目只要求把六种类型的字节数按顺序打印出来，所以就是六条 <code>printf</code>，每行把 <code>__</code> 换成对应的 <code>sizeof(...)</code>。</p><p>小提醒：<code>sizeof</code> 的真实类型是 <code>size_t</code>（无符号），配合 <code>%d</code> 时最好先转成 <code>int</code>；另外 <code>long int</code> 在 32 位编译器下是 4，在 64 位下通常是 8。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    printf("Number of bytes used to store a char type variable is %d\n",      (int)sizeof(char));
+    printf("Number of bytes used to store a short int type variable is %d\n", (int)sizeof(short int));
+    printf("Number of bytes used to store an int type variable is %d\n",      (int)sizeof(int));
+    printf("Number of bytes used to store a float type variable is %d\n",     (int)sizeof(float));
+    printf("Number of bytes used to store a long int type variable is %d\n",  (int)sizeof(long int));
+    printf("Number of bytes used to store a double type variable is %d\n",    (int)sizeof(double));
+    return 0;
+}
+
+/* Output (32-bit MinGW / Dev-C++):
+1 2 4 4 4 8
+   On a 64-bit compiler long int is usually 8, so the 5th line prints 8. */`,
+  notes:[
+    String.raw`<code>sizeof</code> 的结果在编译时就能确定，不占运行时间。`,
+    String.raw`括号里可以放类型名，也可以放变量名或表达式，例如 <code>sizeof x</code>、<code>sizeof(x + 1)</code>。`,
+    String.raw`强制转换成 <code>(int)</code> 只是为了不触发 <code>%d</code> 与 <code>size_t</code> 的类型警告，输出结果不变。`
+  ]
+},
+{
+  n:2, cat:'Data Types & Overflow', title:'Why the Two Sums Differ',
+  body:[
+    ['p',String.raw`Run the following program which tries to use two ways to output the sum of 32767 and 3. Explain why two outputs are not same. Put the explanation as comments at the end of program.`],
+    ['c',String.raw`#include <stdio.h>
+int main (){
+    short int x, y, z;
+    x = 32767;
+    y = 3;
+    z = x + y;
+    printf("%d + %d = %d\n", x, y, x + y); //print x+y
+    printf("%d + %d = %d\n", x, y, z); //print z
+    return 0;
+}
+
+/* 
+Put your explanation here.
+*/`]
+  ],
+  hint:String.raw`<p>先分清两件事：表达式 <code>x + y</code> 在什么类型下计算，以及 <code>z</code> 是什么类型。</p><p>在 C 里做算术时会先“整型提升”，<code>short</code> 会被提升成 <code>int</code>，所以 <code>x + y</code> 得到的是 <code>32770</code>，没有溢出。</p><p>但 <code>z = ...</code> 要写回 <code>short int</code>。2 字节的 <code>short</code> 范围是 <code>-32768 ~ 32767</code>，装不下 32770 就会“回绕”。先算 32770 - 65536 是多少？</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    short int x, y, z;
+    x = 32767;
+    y = 3;
+    z = x + y;
+    printf("%d + %d = %d\n", x, y, x + y); //print x+y
+    printf("%d + %d = %d\n", x, y, z);     //print z
+    return 0;
+}
+
+/* Output:
+32767 + 3 = 32770
+32767 + 3 = -32766
+
+Explanation:
+1. In "x + y" the two short int values are promoted to int, so the
+   addition is done in int (4 bytes). 32770 fits in int, so the first
+   printf prints 32770.
+2. z is declared as short int, whose range is -32768 .. 32767.
+   32770 is out of range. Only the low 16 bits are kept:
+   32770 - 65536 = -32766, so printf prints -32766.
+   (Signed overflow on conversion is implementation-defined in C;
+    on gcc / MinGW it wraps around exactly like this.)
+*/`,
+  notes:[
+    String.raw`口诀：<b>计算时提升，赋值时截断</b>。`,
+    String.raw`<code>short</code> 占 2 字节 = 16 位，最高位是符号位，所以最大正数是 2<sup>15</sup> - 1 = 32767。`,
+    String.raw`把 <code>z</code> 改成 <code>int</code> 或 <code>long</code>，两行输出就会一致。`
+  ]
+},
+{
+  n:3, cat:'Data Types & Overflow', title:'Debug: Header, Types and Quotes',
+  body:[
+    ['p',String.raw`Correct the following program so that this program can produce output`],
+    ['o',String.raw`x = 3, y = 1.5, c = #.`],
+    ['p',String.raw`When you correct the program, you are NOT allowed to change some parts. Pay attention to the comments in the program.`],
+    ['c',String.raw`#include <stio.h>
+int main (){
+    int y;
+    float x;
+    char c = ‘#’;
+    x = 3.5;    //the number 3.5 must not be changed
+    y = 1.5     //the number 1.5 must not be changed
+    printf("x = %d, y = %.1f, c = %c.\n", x, y, c); // don’t change this sentence
+    return 0;
+}`]
+  ],
+  hint:String.raw`<p>一共 4 个坑，从前往后找：头文件名拼错了；字符的引号是中文全角引号；<code>y = 1.5</code> 后面少了分号。</p><p>最关键的是类型：<code>printf</code> 那句不能改，它的格式是 <code>%d</code> 对应 <code>x</code>、<code>%.1f</code> 对应 <code>y</code>，而且期望输出 <code>x = 3</code>、<code>y = 1.5</code>。</p><p>所以谁该是 <code>int</code>、谁该是 <code>float</code>？如果把 <code>x</code> 声明成 <code>int</code>，那么 <code>x = 3.5</code> 会截断成 3 —— 而 3.5 这个数字本身不用改，这就对上了。</p>`,
+  sol:String.raw`#include <stdio.h>
+int main (){
+    int x;
+    float y;
+    char c = '#';
+    x = 3.5;    //the number 3.5 must not be changed
+    y = 1.5;    //the number 1.5 must not be changed
+    printf("x = %d, y = %.1f, c = %c.\n", x, y, c); // don't change this sentence
+    return 0;
+}
+
+/* Output:
+x = 3, y = 1.5, c = #.
+
+Fixed:
+1. <stio.h>      -> <stdio.h>
+2. ‘#’           -> '#'        (full-width quotes are not C syntax)
+3. y = 1.5       -> y = 1.5;   (missing semicolon)
+4. int y; float x;  ->  int x; float y;
+   because %d prints x and %.1f prints y,
+   and 3.5 assigned to an int truncates to 3. */`,
+  notes:[
+    String.raw`<code>int x; x = 3.5;</code> 是“隐式截断”，只保留整数部分，编译器可能给 warning 但能通过。`,
+    String.raw`全角引号 <code>‘ ’</code> 是复制网页/Word 时最常见的隐藏错误，肉眼几乎看不出。`,
+    String.raw`格式串里的 <code>%d</code>/<code>%f</code> 必须和实参类型一致，否则是未定义行为。`
+  ]
+},
+{
+  n:4, cat:'Console I/O & Formatting', title:'Reading a Character',
+  body:[
+    ['p',String.raw`If <code>ch</code> is a char variable, then we can use <code>ch = getchar()</code> statement to read a character from keyboard and assign the char to <code>ch</code>. We can also use <code>putchar(ch)</code> statement to output the value of the variable <code>ch</code> to screen. Write a program to read a character and then output it.`],
+    ['p',String.raw`<b>Attention:</b> In the sample output, "Read a character from keyboard: " and "Output the character: " can be produced from the printf statement.`],
+    ['l','I/O Samples'],
+    ['p',String.raw`<b>Example 1</b>`],
+    ['o',String.raw`Read a character from keyboard: a
+Output the character: a
+Press any key to continue...`],
+    ['p',String.raw`<b>Example 2</b>`],
+    ['o',String.raw`Read a character from keyboard: w
+Output the character: w
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>顺序是：先 <code>printf</code> 提示语（不要带 <code>\n</code>），再 <code>getchar()</code> 读一个字符，然后再打印第二条提示，最后 <code>putchar</code>。</p><p>两条提示语的冒号后面都有一个空格，这个空格是要打印出来的。如果第二行提示没有换行，它就会紧跟在用户输入后面 —— 输入时按下的回车本身就会换行。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    char ch;
+
+    printf("Read a character from keyboard: ");
+    ch = getchar();
+
+    printf("Output the character: ");
+    putchar(ch);
+    putchar('\n');
+
+    return 0;
+}
+
+/* Sample run (the user types a, then ENTER):
+Read a character from keyboard: a
+Output the character: a */`,
+  notes:[
+    String.raw`<code>getchar()</code> 一次只取一个字符，返回的是 <code>int</code>（这样才能表示 EOF）。`,
+    String.raw`<code>putchar(ch)</code> 等价于 <code>printf("%c", ch)</code>，但更轻量。`,
+    String.raw`提示语后面不加 <code>\n</code>，光标才会停在冒号后面等用户输入。`
+  ]
+},
+{
+  n:5, cat:'Console I/O & Formatting', title:'Four Experiments with Format Specifiers',
+  body:[
+    ['p',String.raw`Run the given program following the steps below and record the output at the end of program as comments.`],
+    ['p',String.raw`• Run this program and check the output.`],
+    ['p',String.raw`• Change <code>int</code> to <code>float</code> in the variable declaration, and check the output again.`],
+    ['p',String.raw`• Change all <code>%d</code> into <code>%f</code> in the printf statement, and check the output again.`],
+    ['p',String.raw`• Add .2 between <code>%</code> and f in the first <code>%f</code> in the printf statement, and check the output. Submit the final version with comments.`],
+    ['c',String.raw`#include <stdio.h>
+int main() {
+    int value1, value2, sum;
+    value1 = 15;
+    value2 = 30;
+    sum = value1 + value2;
+    printf("The sum of %d and %d is %d\n", value1, value2, sum);
+    return 0;
+} 
+/* 
+Put your outputs here.
+1. 
+2.
+3.
+4.
+*/`]
+  ],
+  hint:String.raw`<p>这一步实验的目的只有一个：让你亲眼看到 <b>格式串和实参类型不匹配</b> 会怎样。</p><p>第 2 步把变量换成 <code>float</code> 却还用 <code>%d</code>，<code>printf</code> 会把 float 的 4 个字节当成 int 来读 —— 结果是一堆看不懂的数字（未定义行为）。</p><p>第 3、4 步才恢复正常：<code>%f</code> 默认 6 位小数，<code>%.2f</code> 保留 2 位。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main() {
+    float value1, value2, sum;
+    value1 = 15;
+    value2 = 30;
+    sum = value1 + value2;
+    printf("The sum of %.2f and %f is %f\n", value1, value2, sum);
+    return 0;
+}
+
+/* 
+1. int + %d:
+   The sum of 15 and 30 is 45
+
+2. int -> float, still %d  (undefined behaviour):
+   The sum of 0 and 1077936128 is 0
+   (garbage: the bits of a float are read as if they were an int;
+    the exact numbers depend on the compiler)
+
+3. %d -> %f:
+   The sum of 15.000000 and 30.000000 is 45.000000
+
+4. %.2f on the first %f:
+   The sum of 15.00 and 30.000000 is 45.000000
+*/`,
+  notes:[
+    String.raw`<code>%f</code> 默认输出 6 位小数；<code>%.2f</code> 表示保留 2 位。`,
+    String.raw`格式串与实参类型不匹配时 C 不会报错，只会“按你写的类型去解释内存”，所以结果不可预测。`,
+    String.raw`<code>15</code> 赋给 <code>float</code> 会自动转成 <code>15.0</code>，不需要写小数点。`
+  ]
+},
+{
+  n:6, cat:'Console I/O & Formatting', title:'Escape Sequences in One printf',
+  body:[
+    ['p',String.raw`Write a program to give the output in the sample using a <code>printf</code> statement.`],
+    ['l','Non-Functional Requirements'],
+    ['p',String.raw`• Use \t for the spaces between the letters`],
+    ['l','I/O Samples'],
+    ['p',String.raw`<b>Sample Output</b>`],
+    ['o',String.raw`\\"H	e	l	l	o"\\
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>这一题考三个转义：<code>\\</code> 输出一个反斜杠、<code>\"</code> 输出一个双引号、<code>\t</code> 输出一个制表符。</p><p>逐字对样例：开头是“两个反斜杠 + 一个双引号”，结尾是“一个双引号 + 两个反斜杠”，中间 H e l l o 之间都是 <code>\t</code>。</p><p>所以源码里要写 <code>\\\\</code> 才能打出两个反斜杠，别数错。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    printf("\\\\\"H\te\tl\te\to\"\\\\\n");
+    return 0;
+}
+
+/* Output:
+\\"H	e	l	l	o"\\
+
+Breakdown of the format string:
+  \\\\  -> prints two backslashes   \\
+  \"    -> prints one double quote  "
+  \t    -> moves the cursor to the next tab stop
+  \n    -> ends the line
+
+If your teacher's sample shows only one backslash on each side,
+use  printf("\"H\te\tl\te\to\"\n");  instead. */`,
+  notes:[
+    String.raw`<code>\t</code> 制表符的对齐宽度取决于终端，通常每 8 列一个制表位。`,
+    String.raw`<code>printf</code> 里想输出 <code>\</code> 必须写 <code>\\</code>，想输出 <code>"</code> 必须写 <code>\"</code>。`,
+    String.raw`<code>"H\te..."</code> 中 H 后面直接跟 <code>\t</code>，不要手动敲空格。`
+  ]
+},
+{
+  n:7, cat:'Console I/O & Formatting', title:'How scanf Parses Three Inputs',
+  body:[
+    ['p',String.raw`Run the program and try the following three different inputs:`],
+    ['p',String.raw`• 10of100<br>• 10 of100<br>• 10 of 100`],
+    ['p',String.raw`Record the output for each input and give the explanations to the output in the comments at the end of the program.`],
+    ['c',String.raw`#include <stdio.h>
+int main() {
+    int percentage, x;
+    char ch1, ch2;
+    scanf("%d%c%c%d", &percentage, &ch1, &ch2, &x);
+    printf("%d%% %c%c %d is %f\n", percentage, ch1, ch2, x, 1.0*x*percentage/100); 
+    return 0;
+}
+/* 
+Put outputs and explanations here.
+1. 10of100: 
+2. 10 of100:
+3. 10 of 100:
+*/`]
+  ],
+  hint:String.raw`<p>关键在于三种转换说明的差别：<code>%d</code> 会<b>跳过</b>前面的空白字符，而 <code>%c</code> <b>不跳过</b>任何字符，空格也算一个字符。</p><p>输入 <code>10of100</code>：<code>%d</code> 读 10，接着两个 <code>%c</code> 分别拿到 <code>o</code> 和 <code>f</code>，最后 <code>%d</code> 读 100。</p><p>输入 <code>10 of100</code> 时，两个 <code>%c</code> 拿到的是空格和 <code>o</code>，然后 <code>%d</code> 碰到 <code>f</code> 读不下去，转换失败 —— <code>x</code> 从头到尾没被赋值。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main() {
+    int percentage, x = 0;
+    char ch1, ch2;
+    scanf("%d%c%c%d", &percentage, &ch1, &ch2, &x);
+    printf("%d%% %c%c %d is %f\n", percentage, ch1, ch2, x, 1.0*x*percentage/100);
+    return 0;
+}
+
+/* 
+1. 10of100:
+   10% of 100 is 10.000000
+   %d stops at 'o'; ch1='o', ch2='f'; the last %d then reads 100.
+
+2. 10 of100:
+   10%  o <garbage> is <garbage>
+   ch1=' ' and ch2='o'; the last %d meets 'f', the conversion
+   fails and x keeps its old (uninitialised) value.
+   Here x was initialised to 0, so it prints:
+   10%  o 0 is 0.000000
+
+3. 10 of 100:
+   10%  o 100 is 10.000000
+   %d skips the space after 'o' and reads 100, so the result
+   is the same as case 1.
+
+Note: cases 1 and 3 give the same number; only case 2 fails.
+*/`,
+  notes:[
+    String.raw`<code>%d</code> 会自动跳过前导空白（空格、Tab、回车），<code>%c</code> 不会。`,
+    String.raw`转换失败时 <code>scanf</code> 停止解析并返回已成功赋值的个数，但它不会给变量清零。`,
+    String.raw`想让 <code>%c</code> 也跳过空白，写成 <code>" %c"</code>（格式串里加一个空格）。`
+  ]
+},
+{
+  n:8, cat:'Console I/O & Formatting', title:'Five Bugs to Fix',
+  body:[
+    ['p',String.raw`Fix the bugs in the following program. Run the modified program so that it can produce the expected output as shown in sample.`],
+    ['c',String.raw`main()
+{
+    int i, j;
+    char ch;
+    float f;
+    scanf("%d%d%c", i, j, ch);
+    printf("%c is the ASCII code of '%c'.\n", ch,  ch);
+    printf("The value of i is %t.", &i);
+    printf("The value of j is %d.", &j)
+    return 0;
+}`],
+    ['l','I/O Samples'],
+    ['p',String.raw`<b>Sample input and output</b>`],
+    ['o',String.raw`10 20.5 D
+68 is the ASCII code of 'D'.
+The value of i is 10.
+The value of j is 20.5.
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>对着样例一句一句看。第一行要输出 <code>68</code>，但程序写的是 <code>%c</code> —— 要打印 ASCII 码值应该用 <code>%d</code>。</p><p><code>scanf</code> 少写了取地址符，三个参数都要 <code>&amp;</code>；而且输入里有 <code>20.5</code>，<code>j</code> 不能是 <code>int</code>。</p><p>还有：<code>%t</code> 不是合法格式符；<code>&amp;i</code> 把地址传给了 <code>printf</code>；最后一条 <code>printf</code> 少了分号；<code>main</code> 要写成 <code>int main</code> 并带上头文件。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main() {
+    int i;
+    float j;
+    char ch;
+
+    scanf("%d %f %c", &i, &j, &ch);
+
+    printf("%d is the ASCII code of '%c'.\n", ch, ch);
+    printf("The value of i is %d.\n", i);
+    printf("The value of j is %.1f.\n", j);
+
+    return 0;
+}
+
+/* Sample run:
+10 20.5 D
+68 is the ASCII code of 'D'.
+The value of i is 10.
+The value of j is 20.5.
+
+Bugs fixed:
+1. main() -> int main() and #include <stdio.h> added.
+2. int i, j;          -> int i; float j;      (20.5 must be kept)
+3. scanf("...", i, j, ch) -> scanf(..., &i, &j, &ch)
+4. "%d%d%c"           -> "%d %f %c"           (j is a float; the space
+                        before %c makes it skip the blank and read 'D')
+5. printf("%c is the ASCII code...") -> "%d"  (68, not 'D')
+6. "%t" and &i        -> "%d" and i
+7. "%d" and &j        -> "%.1f" and j
+8. missing semicolon after the third printf. */`,
+  notes:[
+    String.raw`<code>scanf</code> 需要地址，<code>printf</code> 需要值 —— 这是最常见的混淆点。`,
+    String.raw`格式串里 <code>%c</code> 前留一个空格，可以吃掉上一次输入剩下的空白/回车。`,
+    String.raw`<code>%t</code> 不是 C 的格式说明（C++ 的 <code>std::format</code> 才有类似写法）。`
+  ]
+},
+{
+  n:9, cat:'Operators & Macros', title:'Six Arithmetic Operations',
+  body:[
+    ['p',String.raw`Write a program to read two integers <code>m</code> and <code>n</code>, and calculate the sum, subtraction, product, quotient, remainder and division. Assume that <code>n</code> is never 0. The output should look like:`],
+    ['o',String.raw`_ + _ = _
+_ ‐ _ = _
+_ * _ = _
+_ / _ = _
+_ % _ = _
+float( _ ) / _ = _`],
+    ['l','Non-Functional Requirements'],
+    ['p',String.raw`variable name should be <code>m</code> and <code>n</code>`],
+    ['l','I/O Samples'],
+    ['p',String.raw`<b>Sample 1</b>`],
+    ['o',String.raw`10 3
+10 + 3 = 13
+10 - 3 = 7
+10 * 3 = 30
+10 / 3 = 3
+10 % 3 = 1
+float(10) / 3 = 3.333333
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 2</b>`],
+    ['o',String.raw`-10 3
+-10 + 3 = -7
+-10 - 3 = -13
+-10 * 3 = -30
+-10 / 3 = -3
+-10 % 3 = -1
+float(-10) / 3 = -3.333333
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>前五行都是整数运算，直接 <code>m+n</code> 这样写就行；注意 <code>printf</code> 里想打印百分号要写 <code>%%</code>。</p><p>最后一行要求带小数，<code>m/n</code> 是整数除法会截断，必须先把其中一个转成浮点：<code>(float)m / n</code>。</p><p>样例里 <code>-10 % 3 = -1</code>，说明 C 的取余符号跟随被除数，写的时候不用特殊处理。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    int m, n;
+
+    scanf("%d %d", &m, &n);
+
+    printf("%d + %d = %d\n", m, n, m + n);
+    printf("%d - %d = %d\n", m, n, m - n);
+    printf("%d * %d = %d\n", m, n, m * n);
+    printf("%d / %d = %d\n", m, n, m / n);
+    printf("%d %% %d = %d\n", m, n, m % n);
+    printf("float(%d) / %d = %f\n", m, n, (float)m / n);
+
+    return 0;
+}
+
+/* Input: 10 3
+10 + 3 = 13
+10 - 3 = 7
+10 * 3 = 30
+10 / 3 = 3
+10 % 3 = 1
+float(10) / 3 = 3.333333  */`,
+  notes:[
+    String.raw`整数除法 <code>10 / 3</code> 结果是 3，小数部分被直接丢掉，不是四舍五入。`,
+    String.raw`<code>(float)m / n</code> 会先把 m 变成 10.0，再做浮点除法；写成 <code>(float)(m / n)</code> 就晚了。`,
+    String.raw`<code>%</code> 只能用于整数，且 <code>%d %% %d</code> 里的 <code>%%</code> 是为了打印一个百分号。`
+  ]
+},
+{
+  n:10, cat:'Operators & Macros', title:'Pre-increment vs Post-increment',
+  body:[
+    ['p',String.raw`Find out the output of the following program before running it in your computer. Then run the program in computer and compare your output with the output from the computer. Change <code>%7d</code> in the second printf to <code>%-7d</code> and run again. Put the outputs as comments in the end of the program and explain the use of <code>%7d</code> and <code>%-7d</code>`],
+    ['c',String.raw`#include <stdio.h>
+int main (){
+    int x = 50, y = 25;
+    int temp1, temp2;
+    temp1 = x/++y;
+    printf("temp1= %d\ty= %d\n", temp1, y);
+    y=25;
+    temp2 = x/y++;
+    printf("temp2= %7d\ty= %d\n", temp2, y);
+    return 0;
+}
+/* 
+Output of
+(1)	%7d: 
+(2)	%-7d:
+Explanation: 
+(1)	difference between temp1 and temp2:
+(2)	difference between %7d and %-7d:
+*/`]
+  ],
+  hint:String.raw`<p><code>++y</code> 是前置自增：<b>先把 y 加到 26，再参与除法</b>，50/26 = 1。</p><p><code>y++</code> 是后置自增：<b>先用 y 的旧值 25 做除法</b>得到 2，然后 y 才变成 26。所以两行里 y 最后都是 26，但 temp 不同。</p><p>格式方面：<code>%7d</code> 表示“占 7 个字符宽、右对齐”，<code>%-7d</code> 是同样的宽度但左对齐（负数表示左对齐）。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    int x = 50, y = 25;
+    int temp1, temp2;
+
+    temp1 = x / ++y;
+    printf("temp1= %d\ty= %d\n", temp1, y);
+
+    y = 25;
+    temp2 = x / y++;
+    printf("temp2= %7d\ty= %d\n", temp2, y);
+
+    return 0;
+}
+
+/* 
+Output of
+(1)	%7d:
+temp1= 1	y= 26
+temp2=       2	y= 26
+
+(2)	%-7d:
+temp1= 1	y= 26
+temp2= 2      	y= 26
+
+Explanation:
+(1)	difference between temp1 and temp2:
+    ++y increments y first (y becomes 26), then 50/26 = 1.
+    y++ divides with the old value (50/25 = 2), then increments y.
+    Both lines end with y = 26, but temp1 = 1 and temp2 = 2.
+
+(2)	difference between %7d and %-7d:
+    %7d  prints the value right-aligned in a field of width 7,
+         so six spaces are added in front of "2".
+    %-7d prints the value left-aligned in a field of width 7,
+         so six spaces are added after "2".
+*/`,
+  notes:[
+    String.raw`前置 <code>++y</code>：先加后用；后置 <code>y++</code>：先用后加。`,
+    String.raw`宽度修饰符 <code>%7d</code> 的 7 是最小宽度，数字超过 7 位时不会被截断。`,
+    String.raw`<code>%-7d</code> 里的负号表示左对齐，右侧补空格，常用于输出表格对齐。`
+  ]
+},
+{
+  n:11, cat:'Operators & Macros', title:'Bigger Number without if',
+  body:[
+    ['p',String.raw`Write a program to read two integers, compare them and output the bigger one.`],
+    ['l','Non-Functional Requirements'],
+    ['p',String.raw`No <code>if</code> statement is used in the program.`],
+    ['l','I/O Samples'],
+    ['p',String.raw`<b>Sample 1</b>`],
+    ['o',String.raw`5 9
+The bigger number is 9
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 2</b>`],
+    ['o',String.raw`15 -6
+The bigger number is 15
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>不能用 <code>if</code>，那就用条件运算符：<code>条件 ? 值1 : 值2</code>，它本身就是个表达式，可以直接放在赋值号右边。</p><p>另外 <code>a &gt; b</code> 的结果是 0 或 1，还能拿来做下标：<code>max = a * (a &gt; b) + b * (a &lt;= b)</code>。两种写法老师都认，前者更常见。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    int a, b, max;
+
+    scanf("%d %d", &a, &b);
+
+    max = (a > b) ? a : b;
+    printf("The bigger number is %d\n", max);
+
+    return 0;
+}
+
+/* Alternative without the conditional operator:
+   max = a * (a > b) + b * (a <= b);
+
+Input: 5 9    -> The bigger number is 9
+Input: 15 -6  -> The bigger number is 15 */`,
+  notes:[
+    String.raw`条件运算符 <code>?:</code> 是 C 里唯一的三元运算符，优先级低于比较运算。`,
+    String.raw`关系表达式的结果是 <code>int</code> 型的 0 或 1，可以直接参与算术。`,
+    String.raw`<code>max = a &gt; b ? a : b;</code> 不加括号也能跑，但加括号更稳。`
+  ]
+},
+{
+  n:12, cat:'Operators & Macros', title:'Function-like Macro square',
+  body:[
+    ['p',String.raw`Write a program to calculate a^2+b^2. Assign the result of a^2+b^2 to the variable <code>square_sum</code>, then output it, where a and b are integers inputted from keyboard.`],
+    ['l','Non-Functional Requirements'],
+    ['p',String.raw`1. Define a macro for <code>square</code>, referring to lecture 4 slide 32.<br>2. The variable declaration in this program should be <code>int a, b, square_sum;</code>.`],
+    ['l','I/O Samples'],
+    ['o',String.raw`3 4
+Square sum is 25
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>带参数的宏用 <code>#define</code> 写：<code>#define square(x) ((x)*(x))</code>。</p><p>为什么要加两层括号？因为宏是<b>文本替换</b>，如果写成 <code>#define square(x) x*x</code>，那么 <code>square(a+1)</code> 会展开成 <code>a+1*a+1</code>，结果就错了。</p><p>声明必须严格写成题目要求的那一行，然后 <code>square_sum = square(a) + square(b);</code>。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+#define square(x) ((x) * (x))
+
+int main(void) {
+    int a, b, square_sum;
+
+    scanf("%d %d", &a, &b);
+
+    square_sum = square(a) + square(b);
+    printf("Square sum is %d\n", square_sum);
+
+    return 0;
+}
+
+/* Input: 3 4
+Square sum is 25
+
+If the macro were "#define square(x) x*x",
+square(a+1) would expand to a+1*a+1 = a + a + 1 (wrong). */`,
+  notes:[
+    String.raw`宏没有类型检查、也没有函数调用开销，纯粹是预处理阶段的文本替换。`,
+    String.raw`每个参数和整个表达式都要包括号，这是写宏的铁律。`,
+    String.raw`宏名后面不能有空格，<code>#define square (x)...</code> 会被当成无参宏。`
+  ]
+},
+{
+  n:13, cat:'Selection & Control Flow', title:'From Flowchart to Code',
+  body:[
+    ['img','data:image/webp;base64,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'],
+    ['p',String.raw`Write a program according to the following control flow diagram and output the final value of <code>n</code>.`],
+    ['l','I/O Samples'],
+    ['p',String.raw`<b>Sample 1</b>`],
+    ['o',String.raw`Input an integer n: 9
+The final value of n is -18
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 2</b>`],
+    ['o',String.raw`Input an integer n: -5
+The final value of n is -10
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>照着菱形判断读分支：条件是 <code>n &lt; 0</code>。<b>T（真）</b>那一路直接绕过 <code>n = -n;</code> 下去，<b>F（假）</b>那一路才执行 <code>n = -n;</code>。</p><p>两条路汇合后一定执行 <code>n = 2 * n;</code>。</p><p>验算一下：输入 9 → 9 不小于 0 → 取反得 -9 → 乘 2 得 -18 ✓；输入 -5 → 小于 0，跳过取反 → 乘 2 得 -10 ✓。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    int n;
+
+    printf("Input an integer n: ");
+    scanf("%d", &n);
+
+    if (n < 0) {
+        /* true branch: skip the negation */
+    } else {
+        n = -n;              /* false branch */
+    }
+
+    n = 2 * n;
+
+    printf("The final value of n is %d\n", n);
+    return 0;
+}
+
+/* Equivalent, shorter version:
+   if (n >= 0) n = -n;
+   n = 2 * n;
+
+Input 9  -> 9 >= 0 so n = -9, then n = -18
+Input -5 -> n stays -5,            then n = -10 */`,
+  notes:[
+    String.raw`流程图里 T/F 标在菱形的哪一侧一定要看清，这题 T 分支是“跳过”而不是“执行”。`,
+    String.raw`<code>n = -n;</code> 只是取相反数，并没有改变绝对值。`,
+    String.raw`等价地可以写成 <code>n = (n &gt;= 0 ? -n : n) * 2;</code>，一行搞定。`
+  ]
+},
+{
+  n:14, cat:'Selection & Control Flow', title:'Multiples of 3 or 8',
+  body:[
+    ['p',String.raw`Write a program to input an integer <code>n</code> and decide if it is multiple of 3 or 8.`],
+    ['l','I/O Samples'],
+    ['p',String.raw`<b>Sample 1</b>`],
+    ['o',String.raw`Input an integer n: 24
+24 is multiple of both 3 and 8.
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 2</b>`],
+    ['o',String.raw`Input an integer n: -9
+-9 is only multiple of 3.
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 3</b>`],
+    ['o',String.raw`Input an integer n: 16
+16 is only multiple of 8.
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 4</b>`],
+    ['o',String.raw`Input an integer n: -4
+-4 is not multiple of 3 or 8.
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>先算两个布尔值：<code>n % 3 == 0</code> 和 <code>n % 8 == 0</code>，一共有 4 种组合，正好对应 4 个样例。</p><p>判断顺序很重要：必须先判断“同时是”，否则 24 会被 <code>only 3</code> 抢先输出。</p><p>负数的取余在 C 里 <code>-9 % 3</code> 等于 0，所以不用取绝对值。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    int n;
+
+    printf("Input an integer n: ");
+    scanf("%d", &n);
+
+    if (n % 3 == 0 && n % 8 == 0)
+        printf("%d is multiple of both 3 and 8.\n", n);
+    else if (n % 3 == 0)
+        printf("%d is only multiple of 3.\n", n);
+    else if (n % 8 == 0)
+        printf("%d is only multiple of 8.\n", n);
+    else
+        printf("%d is not multiple of 3 or 8.\n", n);
+
+    return 0;
+}
+
+/* Combined condition can also be written as  n % 24 == 0
+   because 3 and 8 are coprime. */`,
+  notes:[
+    String.raw`<code>&&</code> 的优先级低于 <code>==</code>，所以 <code>n % 3 == 0 &amp;&amp; ...</code> 不用加括号也正确。`,
+    String.raw`条件从最严格到最宽松排列，可以避免逻辑被前面的分支截走。`,
+    String.raw`能被 3 和 8 同时整除 ⟺ 能被 24 整除（3、8 互质）。`
+  ]
+},
+{
+  n:15, cat:'Selection & Control Flow', title:'Triangle Validity Check',
+  body:[
+    ['p',String.raw`Write a program to input the length of the three sides of a triangle, and decide if the three edges can form a triangle. If a length is not positive, output a warning.`],
+    ['l','I/O Samples'],
+    ['p',String.raw`<b>Sample 1</b>`],
+    ['o',String.raw`Please input the 3 lengths of edges: -1 2 3
+Warning!
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 2</b>`],
+    ['o',String.raw`Please input the 3 lengths of edges: 0 2 0
+Warning!
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 3</b>`],
+    ['o',String.raw`Please input the 3 lengths of edges: 4 3 7
+4, 3, 7 cannot form a triangle!
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 4</b>`],
+    ['o',String.raw`Please input the 3 lengths of edges: 5 4 10
+5, 4, 10 cannot form a triangle!
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 5</b>`],
+    ['o',String.raw`Please input the 3 lengths of edges: 10 6 8
+10, 6, 8 can form a triangle!
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>第一层判断：三条边都必须 <code>&gt; 0</code>，否则输出 <code>Warning!</code> 并且不再判断能否成三角形。</p><p>第二层判断：三角形不等式 —— 任意两边之和必须<b>严格大于</b>第三边。三组都要检查。</p><p>样例 3 的 <code>4 3 7</code> 恰好 <code>4+3=7</code>，不是大于，所以不能成三角形（退化成一条直线）。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    float a, b, c;
+
+    printf("Please input the 3 lengths of edges: ");
+    scanf("%f %f %f", &a, &b, &c);
+
+    if (a <= 0 || b <= 0 || c <= 0) {
+        printf("Warning!\n");
+    } else if (a + b > c && a + c > b && b + c > a) {
+        printf("%g, %g, %g can form a triangle!\n", a, b, c);
+    } else {
+        printf("%g, %g, %g cannot form a triangle!\n", a, b, c);
+    }
+
+    return 0;
+}
+
+/* %g prints 10, 6, 8 without trailing zeros,
+   which matches the sample output exactly. */`,
+  notes:[
+    String.raw`三角形不等式三组都要写：<code>a+b&gt;c</code>、<code>a+c&gt;b</code>、<code>b+c&gt;a</code>。`,
+    String.raw`只写 <code>a+b&gt;c</code> 是不够的，因为 a 不一定是最大的边。`,
+    String.raw`<code>%g</code> 会自动去掉多余的小数位，适合这种“可能整数也可能小数”的输出。`
+  ]
+},
+{
+  n:16, cat:'Selection & Control Flow', title:'Flowchart: Height and Weight',
+  body:[
+    ['img','data:image/webp;base64,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'],
+    ['p',String.raw`Write a program to implement the following control flow diagram. Assumption: the inputted height and weight are all bigger than 0.`],
+    ['l','I/O Samples'],
+    ['p',String.raw`<b>Sample 1</b>`],
+    ['o',String.raw`Input height(cm, >0) and weight(kilo, >0): 165 35
+You are too slim
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 2</b>`],
+    ['o',String.raw`Input height(cm, >0) and weight(kilo, >0): 165 45
+You are fit
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 3</b>`],
+    ['o',String.raw`Input height(cm, >0) and weight(kilo, >0): 165 90
+You are too fat
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>把 <code>height - 105</code> 先算出来当成“标准体重”，后面两个判断都用它，代码会清爽很多。</p><p>第一个菱形：<code>(height - 105) &gt; weight + 20</code>，为真就是 too slim。</p><p>第二个菱形是区间判断：<code>weight - 10 &lt; (height - 105) &lt;= weight + 20</code>。C 不能连着写两个比较，必须拆成 <code>weight - 10 &lt; h - 105 &amp;&amp; h - 105 &lt;= weight + 20</code>。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    float height, weight, standard;
+
+    printf("Input height(cm, >0) and weight(kilo, >0): ");
+    scanf("%f %f", &height, &weight);
+
+    standard = height - 105;          /* the "(height - 105)" of the chart */
+
+    if (standard > weight + 20) {
+        printf("You are too slim\n");
+    } else if (weight - 10 < standard && standard <= weight + 20) {
+        printf("You are fit\n");
+    } else {
+        printf("You are too fat\n");
+    }
+
+    return 0;
+}
+
+/* 165 35 -> standard = 60, 60 > 55          -> too slim
+   165 45 -> 60 > 65 false; 35 < 60 <= 65     -> fit
+   165 90 -> 60 > 110 false; 80 < 60 false    -> too fat */`,
+  notes:[
+    String.raw`数学写法 <code>a &lt; x &lt;= b</code> 在 C 里必须拆成 <code>a &lt; x &amp;&amp; x &lt;= b</code>。`,
+    String.raw`把流程图里重复出现的 <code>height - 105</code> 提成一个变量，既少算几次也不会写错。`,
+    String.raw`两个判断是嵌套关系（第二个只在第一个为假时执行），所以用 <code>else if</code> 而不是两个独立 <code>if</code>。`
+  ]
+},
+{
+  n:17, cat:'Selection & Control Flow', title:'Switch: Letter Grade to Points',
+  body:[
+    ['p',String.raw`Implement a program that can read and transfer a letter grade to points. Output the points to two decimal places. A waring is given for an invalid input.`],
+    ['p',String.raw`• If grade is ‘A’ or ‘a’, output points 4.00<br>• If grade is ‘B’ or ‘b’, output points 3.00<br>• If grade is ‘C’ or ‘c’, output points 2.00<br>• If grade is ‘D’ or ‘d’, output point 1.00<br>• If grade is ‘F’ or ‘f’, output point 0.00`],
+    ['p',String.raw`Assumption: the inputted grade should be of <code>char</code> type.`],
+    ['l','Non-Functional Requirements'],
+    ['p',String.raw`Use <code>switch</code> statement`],
+    ['l','I/O Samples'],
+    ['p',String.raw`<b>Sample 1</b>`],
+    ['o',String.raw`Enter a letter grade: B
+3.00
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 2</b>`],
+    ['o',String.raw`Enter a letter grade: f
+0.00
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 3</b>`],
+    ['o',String.raw`Enter a letter grade: w
+warning!
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p><code>switch</code> 的每个 <code>case</code> 只能跟一个常量，但可以连续写多个 <code>case</code> 共用一段代码 —— 大小写就靠这个“贯穿（fall through）”。</p><p>例：<code>case 'A': case 'a': printf("4.00\n"); break;</code></p><p>输出要两位小数，可以直接打印字符串 <code>"4.00"</code>，也可以用一个 <code>double</code> 变量配 <code>%.2f</code>。别忘 <code>default</code> 输出 <code>warning!</code>（小写，和样例一致）。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    char grade;
+
+    printf("Enter a letter grade: ");
+    scanf("%c", &grade);
+
+    switch (grade) {
+        case 'A': case 'a': printf("4.00\n"); break;
+        case 'B': case 'b': printf("3.00\n"); break;
+        case 'C': case 'c': printf("2.00\n"); break;
+        case 'D': case 'd': printf("1.00\n"); break;
+        case 'F': case 'f': printf("0.00\n"); break;
+        default:            printf("warning!\n"); break;
+    }
+
+    return 0;
+}
+
+/* Version with a numeric variable:
+   double points;
+   ...
+   case 'A': case 'a': points = 4.0; break;
+   ...
+   printf("%.2f\n", points); */`,
+  notes:[
+    String.raw`<code>case</code> 后面必须是整型常量，不能写 <code>case grade == 'A'</code>。`,
+    String.raw`没有 <code>break</code> 就会继续执行下一个 <code>case</code>，这里正好用来处理大小写。`,
+    String.raw`<code>switch</code> 不能判断区间或浮点数，这种“多值映射”才是它的主场。`
+  ]
+},
+{
+  n:18, cat:'Loops & Iteration', title:"Counting 'c' in a Line",
+  body:[
+    ['p',String.raw`Write a program to read a line of characters and output the number of the character <code>'c'</code> in this line. The line ends with <code>ENTER</code> key (i.e., <code>'\n'</code>). There is no limit to the number of characters in this line.`],
+    ['l','Non-Functional Requirements'],
+    ['p',String.raw`Your program should read the line character by character, i.e., use <code>%c</code> in scanf statement to read repeatedly until <code>ENTER</code> key.`],
+    ['l','I/O Samples'],
+    ['p',String.raw`<b>Sample 1</b>`],
+    ['o',String.raw`Input a line of characters: Could come account can
+There are totally 4 'c'.
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 2</b>`],
+    ['o',String.raw`Input a line of characters: abc92,fjsl$3@cdk1%
+There are totally 2 'c'.
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>不知道这一行有多长，所以要用“读到回车为止”的循环：<code>while (scanf("%c", &amp;ch) == 1 &amp;&amp; ch != '\n')</code>。</p><p>循环体里只做一件事：如果 <code>ch == 'c'</code> 就把计数器加 1。</p><p>注意样例 1 里的 <code>Could</code> 是大写 C，不算；小写 c 一共 4 个。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    char ch;
+    int count = 0;
+
+    printf("Input a line of characters: ");
+
+    while (scanf("%c", &ch) == 1 && ch != '\n') {
+        if (ch == 'c') {
+            count++;
+        }
+    }
+
+    printf("There are totally %d 'c'.\n", count);
+
+    return 0;
+}
+
+/* Input: Could come account can
+   C-o-u-l-d    -> 'C' is upper case, not counted
+   come         -> 1
+   account      -> 2
+   can          -> 1
+   total        = 4 */`,
+  notes:[
+    String.raw`<code>scanf("%c", &amp;ch)</code> 返回成功读入的个数，等于 1 说明真的读到了字符。`,
+    String.raw`<code>getchar()</code> 更简洁（<code>while ((ch = getchar()) != '\n')</code>），但本题要求用 <code>%c</code>。`,
+    String.raw`用 <code>int count = 0;</code> 初始化，否则计数会从随机值开始。`
+  ]
+},
+{
+  n:19, cat:'Loops & Iteration', title:'Sum of Even and Odd',
+  body:[
+    ['p',String.raw`Write a program to input a positive integer <code>n</code>, and calculate and output 1) the sum of the even numbers from 1 to <code>n</code> (inclusive), storing the result in the variable <code>sum_even</code>, 2) the sum of odd numbers from 1 to <code>n</code> (inclusive), storing the result in the variable <code>sum_odd</code>, and 3) the difference between these two sums, i.e., <code>sum_even</code> - <code>sum_odd</code>, storing the result in the variable <code>diff</code>. Output a warning if the input <code>n</code> is not positive.`],
+    ['l','Non-Functional Requirements'],
+    ['p',String.raw`The variable names <code>n</code>, <code>sum_even</code>, <code>sum_odd</code> and <code>diff</code> must be used as required.`],
+    ['l','I/O Samples'],
+    ['p',String.raw`<b>Sample 1</b>`],
+    ['o',String.raw`Input an integer: 9
+sum_even is 20, sum_odd is 25, diff is -5.
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 2</b>`],
+    ['o',String.raw`Input an integer: 0
+Warning! You should input a positive integer.
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>先判断 <code>n &lt;= 0</code>，若成立直接输出警告并 <code>return 0</code>，不要继续算。</p><p>然后一个 <code>for (i = 1; i &lt;= n; i++)</code>，用 <code>i % 2 == 0</code> 分两堆累加。</p><p>三个变量一定要初始化为 0；<code>diff</code> 在循环结束后再算。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    int n, i;
+    int sum_even = 0, sum_odd = 0, diff;
+
+    printf("Input an integer: ");
+    scanf("%d", &n);
+
+    if (n <= 0) {
+        printf("Warning! You should input a positive integer.\n");
+        return 0;
+    }
+
+    for (i = 1; i <= n; i++) {
+        if (i % 2 == 0)
+            sum_even += i;
+        else
+            sum_odd += i;
+    }
+
+    diff = sum_even - sum_odd;
+    printf("sum_even is %d, sum_odd is %d, diff is %d.\n", sum_even, sum_odd, diff);
+
+    return 0;
+}
+
+/* n = 9: even 2+4+6+8 = 20, odd 1+3+5+7+9 = 25, diff = -5 */`,
+  notes:[
+    String.raw`<code>+=</code> 是复合赋值，<code>sum_even += i</code> 等价于 <code>sum_even = sum_even + i</code>。`,
+    String.raw`提前 <code>return 0</code> 可以避免把警告之后的代码也执行一遍。`,
+    String.raw`其实有公式（n 为偶数时 diff = n/2），但题目要求用循环，循环也顺便验证公式。`
+  ]
+},
+{
+  n:20, cat:'Loops & Iteration', title:'Semester GPA Calculator',
+  body:[
+    ['p',String.raw`Assume that a student has 6 courses in one semester. Write a program to input grades for all the courses and the units for each course (units can only be 1 or 3 in BNBU) and then calculate sGPA (semester GPA) for this semester. Grades and points:`],
+    ['p',String.raw`A: 4, B: 3, C: 2, D: 1, F: 0.`],
+    ['p',String.raw`Assumption: Consider exactly 6 courses. GPA calculation method:`],
+    ['img','data:image/webp;base64,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'],
+    ['p',String.raw`For example, if a student gets A, B, A, F, D, and C for six courses, the units for these six courses are 3, 1, 3, 3, 1, and 3 respectively, then the sGPA is`],
+    ['img','data:image/webp;base64,UklGRpYTAABXRUJQVlA4WAoAAAAwAAAALwIAOgEASUNDUMgBAAAAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADZBTFBIOBAAAAHwx///KiX+/93PBAyNlC0mYgdpu2Hgit2L3d3duW3uLutrje0Ou7sL27XBoEOQERgmzuMPzjnPM09gX+g7JiImAA7/O/zv8L/D/w7/O/zv8L/D/w7/O/zv8L/D/w7/O/zv8L/D/w7//3+TG3Szn1DOT8uTh78TH4I3Z14DOHD3d+FJCHDjwhDgype7lg9PDUdO5T250PmVK03KJSbaS9fj4YucrOUBnGhCzuW8KPyuNgcBi7MFrnT7SWOvpsezs/L/aMiL+5Sc5Mx9jQV71fg5N9N0pLmWG+dG8f15cGmR2Yobn9UvreLNrk728lqRmZn3cJBrqfE92e3TxBZ+5b8Vn/jy0eNVnwC/odbcpnbqMvNElshZR4vdojOGlvcbIObFcHI0J8zLf1tBTztVzlhSwffdAvM4PqoO+SKhkOxXZ9jXzwqJm4BnB+rXmF9oOehkH+e43bV9az2y7Sstokx26yieCgT0KXRChZXvsfllPYsAcJTSfOxzcM/qo6RS9GCVArPIXs7xz94DhHOUqGcL+UqFJeJMAB7P0yvbxflJzggAC6mwGVvtbSr0OPPNQuJgxMmty0mtH1X44W89gP6i7RP7fGL+3AWoL9qGlg6+KbfstoBoEYArRH5su8ezdSA6B+AnMje2D4Cv1ZqxUqVtRyz28jTRA2dgA1EkW8ebbN7pNi8AWE+f2KUqURKAnkQz2CKvqQAgkAcAzVRLZHMpMM4XAFwgsbxdjpA1DICZ4koFYcvmDSoIDN3MliEAbpPNg22fCv5G6xYAf1JhPQaBn9kqDboZbGYTGAzx1lMa4FsS67J1UqGhJRNFR9AVBoHBOcN6EcBgojFsLTkSOEpiCxJJ9AHwMVE7u2yyGIMAvUiHSoXeT71U6L9Xr0zTsJkeMOTTN2A/oAKqhboCuETJLsqCTtTlZq46rs87qFD9bIgyBIZ6AkIS/QP2ziqMpnsSnShNmefePsrgF1YewCYqrMzWmqPtS/hJZtPdpB0aACuJOijSfPkRg2vzIAGIIrFFaeB5qwNU+A/5KpMU1lJigAqH1JDsYs4Ng/Je1J2b+arodq6GCq0ohkHybbL2VyFKhc10RSKMLBpFNek7BsnGL63jwd6Go6cn+Elhg1cjLQD8RBSsyDnxHwZJ9xu0B6Wg8M3nYHFv7IzlZiAgRFm1RisKb9cBL5XqjchPHgSFTqFuCKF28AjRF5uoJB8WfXNvNBM7wtDKVZFfvZjc1IHg4jCdk2hEVFmufgV4iKvhFOKpyDO4w7MXqzTFJjgQuL0PQsOKxUXakCiegXxgHUGIPwXUraFIqBN5wLTTUBoEp/owrbEcwehkhCYXKDuWQ+lDwc2vmTbbKmcl79iuVfS1Naj+yBpdXNyf1gdLa1tqozrWiIBrthhFH6ZbC9a583GJzks0Jmoo41KY1havhuj+sK5VNCzVIv7kDp4GKHJ+ZByLc99pvjZdFIrVajGrioKX+Ytx5hdhYd5ZRe5P8ulqKEpB3+dRYApYnfPkswfrTNcHKgNcx1nj6vAC6NunJUYrcJuenD49/9PcxAkuTBpetm8Bk8vIRzlfWD55/mKBryJA1zY/ZSgnZyWaKEGvS5YNCXMfGj+tpAhAkxuvZhcX4Z39lj+v7IyzfNMIxSn4RUprKIz42Xz00J/7bTvCFQGo8KPlJ03Jt2Snlg3wjy2gxJF6sB+grApyK2Kln5+Kle7DAKyjwhA5wGNZIaXPdgIjU69Y6QtXYqVHykXc8WQDhCmpVPCpB9gnkqmtXNdY6b2ZsdIL5I7SeYkwoqpy0PaPJ+u2QLB3JJokFxQrvSMjVnqdK8tARQDevUbWHXXB2IyotSL/TbHSebHSaxkCUp63hPKwIzY6Gwl2TTrt1pd0rVPci35JSe7uCnT17pqthf/xVWEB0RS59jHSt7bHSNdh6ki0V4Gm2h6zaNlTXmDTKqobI/3bjhjpUBmv1B7u7u7uzc3k6a6TEzy+t4qWS7U0bJ4muqOTqR0j/cmzGOk2ctvomsRbZIW84LXSZDU9bK1jq0r0UM4lRnrlkxjpvhqWQQwu4wuslpwoJ7Y2ilz6x0hnx0j3VKY/lloRyp375lrML4cb2HCUzE1KulXWlznZ2dkmsmVn+8g0uFx4dsq9bsbMrQq6/vxukWlEP8rJHxoP5ibfTtUCiCQqkKtwIu9uRMHAlFc7y9lFfv5KsNYuMOZkZ2e/FCk7u7+Mz57cxBhL/4ums7XlKm6fUcTDSMleMvJRN8E8hR5L9KV0BbEZ5r5PBx01X24q5//1By4AAohsBhn5NtegaiDR+4o0axJNE09v2W67288uClOg6q+XfQHN8rpykx5bP979zRIxYYyC2Vt9i+wlsWdJ5xcseYRSg4M1MtONizE5DTUOp8uVe0XWQAAziLbwEEfWcAAtiTLlWpk3eFUWG/l9nx/KksOJPii46Gii+sGeMs0Lf60UbIv0XGfuKqNLJLFbkVeU6MlBc8tLiWkUJ+eadqyOpnCUdnbeZLmviJYBqEBUqCseTrdvtMKln4ThyX8xteXG6as9PgB8MprKCLcTuiLuD0TH75DrKdJdHYB9JHYu6WR3UCKUugCfmAXAIFfZRtZaANYSDeHhPtkiAQwlcYscvIF21B7Qg0nHh2xnIg0UugFhYkfAFbJOZhIHAKhho7MaDnzSyb/I17RODgYggNYAesj/RbQGQH2iK+AnRhEMeuD+PkCP4qKdfjfQ188voLWpkgwEPbRPTwEandxEoqdFrpCpbimxi5IUAfiW/KD4ek4XAcAtyvHm4ZeCmToAv5GpvgIA71MPMHMXTaRVAqAtDYHizbRKC2AbmeuDA3xEqwB4p+QHKAAQTD9CcYxtiweAoUQjOBqsrGjiSTA3I2rHy0RrbmZGZtaLV6JeDoBL0l0o9sq/XgmAt4n+1JQGocdO55H18nEvRY3HapWFJx4aGBz6t/gkCDxUPB43qXGDj03ZnaDcd0oAw6bjZ4xku356lxcn+p9OpBD9c6KjonLTqyhzPXp3RtP6y8TCIeBCtytnmKH639buUO40poky12/jV4TXnp5jnaXhIujYiXtEaedOjGIY2Imh9bETCUTPzp3oxUN5I8nGQbHQq5syjMna2qFO1/u0R4/SsNb8qZMmTJq6wFURu//mm4nPr3/mAS7gtuLys6S7P9WHnUfMnDJpwsTJ02e5cqKdNH3yhImT5zRRxK6defFp0r2/G4APOK24kxh/IAJ2FkacfJLycH87qKhKxQVTJ0+cMGnqnHcYmIPnT500YcKkqfMiePBdLh+tTMWwfQ+SE86PF8C7Z/N2Yf7q9BovUzmiVWM3luJ+aJwKxV+l4h51Q41ir0oJqEIJL7TPzMuzWT8xqBBkuSEU0X2Un5NtLuhRovRpUAI1CiuBqg8sgfzGlESjS5nOxh6VKnXNEi95MOkvk9SXF+s568NzTDNKkte5AVnL9ACGEC1iWl4oVcP8oj+guUAp3m8E9CVaDkD/gp4KDM1yj0h1JHoM4ATlV3ojYAjRcQD4i8QKyoSLA7ZK6R/YRgCa85Tl90aA754HUUX2kOinbMVhbJGCa3kAhqe0R/tGgKzTC7oNxVUeBykoql8oPvDH6/OoUczBbN1JjFHkfG84FEXNvyKe88Fr9EVfyH6+aeP69es++6wj2ynabVA0+oJB2YTVW/POtJZqGPG62k2R/YUP6W9XKG2aHAhlACon5C/SFrlMr6vDuGpfsB2KNXsXgw2ryNK2SOdBr6t9eGpasESvbPTD3tFdoqIOUHyXKBe5dkQ3i7wejx7B3FBZSPw4HYA/3OXm3pHMo4I7d6pgyoXtBgBhRKLutdmfR5knKapwYwYAeKUBgM4Z8sIZuiEAhqdkqwegHVEa3gj0fjbKy8urXPXPzgGolmmLZHJ+TMaKABaQOPuNANfTIok2UST6DsA8oi1yumt03xnAxvzOAqC/QQ893giIIflZAFrlWPtJdTCaiMhqDITuy5ytU6eeFI9WQ+murRocXFnHk3sNjnzr1KvlyY9b7XpBflxV9uJHWzm4XjWnfz0eNeXdAEDvBmmXCm4GJ4NbJR2A+j/cvH2kN0r5yheMqcaXl2vzE3I9TuBmckZuRn7KGF6in+clF2RuduJGO+bFGG40e15m5Bpv1/63w6tGi9Le/fbSinBdIiYHquAqqLBl/wMrXVdHq1Fh+dVwLcKt4moVNAYV3kmINqDqVfpbUMFThaa/H08Tabw6BhU8Lm4MhH4a5Uf8V/AvcCXd8QfcsmifwPa4uQrb1/Y7pda8UWyuqfmTAewiowfb22fZnOPFzQB6EvVmq5ngxhb6w7JuWWpdU6GT7VEjwEOkXWVDe0kcDrgk0kMDW0aYCgAOqrVqGpuniRJcgfVE7dk63mTzySAjgFCiDWzBz9zZAPhmqPVYhbkibQVgpvSyobfyM6oAbpl0RcP2gq81KujOiB8LwJ9kC2DrpIImVjwAIJpoAls9zhJUqJtrbAm4iXS+bAiuegAhVlsPsL/k60MVIHgCcH1JR8HeWQXAUwDwHSWVY2vA2TMV4GwA0IJoVBlR0XJPxF+hopGvj9UoqhkmvohUIUqVoq3I3BfsDTl7rkZRt9/EOJeyIsPw9c+sSw0lU+jck4V3g8BLlWm/52a2FUqmwR8+tH3lhrJij3kf/ZmxObBkil75xb2DPbkJXrH2Ytxsp5Jp4QffJ35bvcyo6EDTs+YK9AZpY2uDtMByQ5nWIL12tkFaowhAwHP6RJDTGKS73zJI6xQBcPpN/L2cAoN0yHN/g6Qz0wRlTgbpRIOsMgAdbXnvlCXprlGKt4wm3SwtWszSU+3yk1naajVLr2XBOyLNlPvYLG0RzdIPWFAjj3bIdSg0S4tm6cIaLBOVZZilRbO0KZwF+6mwUhkS/iCxjwzqNJDO699A2ssuFRtIb/uwgbQ/k2c+PTDI+DWQHne/gXQNJu90ypIzNJDukRLeQFrLMllZ3QbSqQ1kDUxTiNaXBem/OjdOAPA90Udy8sYwqHqQbiqT/3gamHue+ckFgLuRUrxl5KNugjno0IHGADxSSTTIyDd85g412eSfg1m/9vLUIiOJ9pYFNRQpyRPA70QTOdLw4WwlGgfAI4+eunPwA9FfALzTqAD8TOGkBZHVHcAkoh/KggJFemAAtJcpr1pJoykgagMgXKQd4OALorUAqhnpKkdTOWlOlKQB8DvRe2VBTrfu1QRQN5c2abnQ6X0u0eNANx0PGG5bCMD5EiUE8NAkf7sBwCKx4F0+9E7NX9JGH4OWB93pV6EAgky0TSgLQtDN+Onvjcwt2AoVVblrLjQVmEzm51xoNmZu7tXtF/FuK/CAcRl7B3b5WEztBy4CbGZTQYGp0PILDwg4Ez//vff/Me/1Qhlx1PGMp1sqgRMNpAUugIAvn2Sc7ieADxjm3cu6MUsPPiBAWsMF0G5f5vNfglD2rYo91bGjOnZUx57qlJm/68FVrQpc+UVwZeis4apNWZ7D/w7/O/zv8L/D/w7/O/zv8L/D/w7/O/zv8L/D/w7/O/zv8L/D///PWlZQOCBoAQAAsCgAnQEqMAI7AT4pFIlDoaEhEAQAGAKEtLdwu7CNoAT2Ae+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ9YAD+//mlwAAAAAAAAAAAAAAAAAAAAAAAAAAA'],
+    ['l','Non-Functional Requirements'],
+    ['p',String.raw`Do not use array`],
+    ['l','I/O Samples'],
+    ['p',String.raw`<b>Sample 1</b>`],
+    ['o',String.raw`Please input grade and units for each course (6 courses): A3B1A3F3D1C3
+The GPA for this semester is: 2.43
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 2</b>`],
+    ['o',String.raw`Please input grade and units for each course (6 courses): A3G1A1D3F1C1
+Warning! Invalid grade.
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>不能用数组，所以就用一个循环跑 6 次，每次读一对“字母 + 数字”，累加到两个总和里。</p><p>读这种紧挨着的输入 <code>A3B1...</code> 用 <code>scanf(" %c%d", &amp;grade, &amp;unit)</code> 最方便：<code>%d</code> 读到字母就停，下次循环正好从字母开始。</p><p>字母用 <code>switch</code> 换成学分，遇到其它字母立刻输出 <code>Warning! Invalid grade.</code> 并结束。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    int i, unit, points;
+    int total_points = 0, total_units = 0;
+    char grade;
+    double gpa;
+
+    printf("Please input grade and units for each course (6 courses): ");
+
+    for (i = 0; i < 6; i++) {
+        scanf(" %c%d", &grade, &unit);
+
+        switch (grade) {
+            case 'A': case 'a': points = 4; break;
+            case 'B': case 'b': points = 3; break;
+            case 'C': case 'c': points = 2; break;
+            case 'D': case 'd': points = 1; break;
+            case 'F': case 'f': points = 0; break;
+            default:
+                printf("Warning! Invalid grade.\n");
+                return 0;
+        }
+
+        if (unit != 1 && unit != 3) {
+            printf("Warning! Invalid units.\n");
+            return 0;
+        }
+
+        total_points += points * unit;
+        total_units  += unit;
+    }
+
+    gpa = (double)total_points / total_units;
+    printf("The GPA for this semester is: %.2f\n", gpa);
+
+    return 0;
+}
+
+/* A3 B1 A3 F3 D1 C3
+   points*units = 12 + 3 + 12 + 0 + 1 + 6 = 34
+   units        = 3 + 1 + 3 + 3 + 1 + 3  = 14
+   GPA          = 34 / 14 = 2.4285... -> 2.43 */`,
+  notes:[
+    String.raw`格式串 <code>" %c%d"</code> 开头的空格会跳过上一次输入留下的空白或换行。`,
+    String.raw`<code>(double)total_points / total_units</code> 才能得到小数，否则整数除法直接截断。`,
+    String.raw`样例 2 里的 <code>G</code> 不是合法等级，<code>default</code> 分支负责报错。`
+  ]
+},
+{
+  n:21, cat:'Loops & Iteration', title:'Nested Loops Pattern',
+  body:[
+    ['p',String.raw`Write a program to print out the following pattern.`],
+    ['o',String.raw`*********
+=======
+*****
+===
+*`],
+    ['l','Non-Functional Requirements'],
+    ['p',String.raw`<code>Nested for</code> statement should be used`]
+  ],
+  hint:String.raw`<p>数一下：一共 5 行，每行星号/等号的个数是 9、7、5、3、1 —— 每行少 2 个，所以是 <code>9 - 2 * i</code>（i 从 0 开始）。</p><p>外层 <code>for</code> 控制行数，内层 <code>for</code> 控制这一行打印几个字符，打完记得输出换行。</p><p>字符在两种之间交替：偶数行 <code>*</code>，奇数行 <code>=</code>，可以用 <code>i % 2 == 0 ? '*' : '='</code>。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    int i, j;
+
+    for (i = 0; i < 5; i++) {
+        for (j = 0; j < 9 - 2 * i; j++) {
+            putchar(i % 2 == 0 ? '*' : '=');
+        }
+        putchar('\n');
+    }
+
+    return 0;
+}
+
+/* i = 0 -> 9 '*'
+   i = 1 -> 7 '='
+   i = 2 -> 5 '*'
+   i = 3 -> 3 '='
+   i = 4 -> 1 '*'    */
+
+/* Version using printf instead of putchar:
+   for (j = 0; j < 9 - 2 * i; j++)
+       printf("%c", i % 2 == 0 ? '*' : '=');   */`,
+  notes:[
+    String.raw`外层循环变量控制“第几行”，内层循环变量控制“这一行有几个字符”，两者不能共用。`,
+    String.raw`内层循环每轮都要重新从 0 开始，所以 <code>j</code> 的初始化在内层 <code>for</code> 里。`,
+    String.raw`行数固定为 5，也可以写成 <code>9 - 2*i &gt; 0</code> 之类更通用的条件。`
+  ]
+},
+{
+  n:22, cat:'Loops & Iteration', title:'Prime Number Test',
+  body:[
+    ['p',String.raw`Write a program to read a positive integer number and decide if the number is prime or not. If the inputted number is not positive, give a warning and end the whole program.`],
+    ['l','I/O Samples'],
+    ['p',String.raw`<b>Sample 1</b>`],
+    ['o',String.raw`Input a positive integer: 37
+37 is a prime.
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 2</b>`],
+    ['o',String.raw`Input a positive integer: -9
+Warning! You should input a positive integer.
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 3</b>`],
+    ['o',String.raw`Input a positive integer: 8
+8 is not a prime.
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>先处理 <code>n &lt;= 0</code> 的警告分支，直接结束程序。</p><p>再想判定逻辑：从 2 试到 √n，只要有一个能整除就不是素数。循环条件写 <code>i * i &lt;= n</code> 比 <code>i &lt;= n/2</code> 快很多。</p><p>别忘了 1 既不是素数也不是合数，要单独处理。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    int n, i, is_prime = 1;
+
+    printf("Input a positive integer: ");
+    scanf("%d", &n);
+
+    if (n <= 0) {
+        printf("Warning! You should input a positive integer.\n");
+        return 0;
+    }
+
+    if (n == 1) is_prime = 0;
+
+    for (i = 2; i * i <= n; i++) {
+        if (n % i == 0) {
+            is_prime = 0;
+            break;          /* no need to keep testing */
+        }
+    }
+
+    if (is_prime)
+        printf("%d is a prime.\n", n);
+    else
+        printf("%d is not a prime.\n", n);
+
+    return 0;
+}
+
+/* 37 -> is a prime      (2..6 all fail to divide 37)
+   8  -> 8 % 2 == 0      -> not a prime
+   1  -> handled separately */`,
+  notes:[
+    String.raw`<code>i * i &lt;= n</code> 比 <code>sqrt(n)</code> 更安全（不用引 <code>math.h</code>，也没有浮点误差）。`,
+    String.raw`找到因子后 <code>break</code> 提前退出，效率更高。`,
+    String.raw`素数判定从 2 开始，所以 1 必须单独判断。`
+  ]
+},
+{
+  n:23, cat:'Arrays & Strings', title:'Array Search by Index',
+  body:[
+    ['p',String.raw`Write a program to find the index of an integer in an array. Assume that the array size is 50. The program will read the array elements first (end with -1, but -1 is not included) and then input an integer to search in the array. If the integer appears more than one time in the array, give the index for the first appearance of this integer. If the integer does not appear in the array, print "<code>Not found</code>". If the array is empty, output "<code>Array is empty</code>".`],
+    ['l','I/O Samples'],
+    ['p',String.raw`<b>Sample 1</b>`],
+    ['o',String.raw`Please input a sequence of integers (end with -1): 1 2 3 -1
+Enter the number you want to search: 2
+The index of 2 in the array is 1.
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 2</b>`],
+    ['o',String.raw`Please input a sequence of integers (end with -1): 10 20 5 8 9 -1
+Enter the number you want to search: 7
+7 Not found.
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 3</b>`],
+    ['o',String.raw`Please input a sequence of integers (end with -1): 10 20 5 8 9 20 -1
+Enter the number you want to search: 20
+The index of 20 in the array is 1.
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 4</b>`],
+    ['o',String.raw`Please input a sequence of integers (end with -1): -1
+Array is empty.
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>三个阶段要分清：①读入直到 -1（用一个 <code>n</code> 记录实际个数，-1 不存）；②如果 <code>n == 0</code> 立刻输出 <code>Array is empty.</code> 并结束，<b>不要再问搜索哪个数</b>；③否则提示输入目标值，遍历找第一个下标。</p><p>“第一次出现”靠 <code>break</code> 实现 —— 找到就停，不要继续覆盖下标。</p><p>找不到时输出格式是 <code>7 Not found.</code>，数字在前。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+#define MAX 50
+
+int main(void) {
+    int a[MAX];
+    int n = 0, x, i, index = -1;
+
+    printf("Please input a sequence of integers (end with -1): ");
+    while (scanf("%d", &x) == 1 && x != -1) {
+        if (n < MAX) a[n++] = x;
+    }
+
+    if (n == 0) {
+        printf("Array is empty.\n");
+        return 0;
+    }
+
+    printf("Enter the number you want to search: ");
+    scanf("%d", &x);
+
+    for (i = 0; i < n; i++) {
+        if (a[i] == x) {
+            index = i;
+            break;            /* first appearance only */
+        }
+    }
+
+    if (index == -1)
+        printf("%d Not found.\n", x);
+    else
+        printf("The index of %d in the array is %d.\n", x, index);
+
+    return 0;
+}
+
+/* Note: index is 0-based, so "1 2 3" searched for 2 gives index 1. */`,
+  notes:[
+    String.raw`<code>n</code> 是实际元素个数，同时充当“下一个空位”的下标，所以是 <code>a[n++] = x</code>。`,
+    String.raw`<code>index = -1</code> 作为“没找到”的哨兵值，最后统一判断一次。`,
+    String.raw`空数组要提前返回，否则样例 4 会多打印一行搜索提示。`
+  ]
+},
+{
+  n:24, cat:'Arrays & Strings', title:'Array-Based Stack',
+  body:[
+    ['p',String.raw`Write a program that uses array to implement a stack. At the beginning, the stack (array) is empty. There are two operations on the stack: push and pop.`],
+    ['p',String.raw`• The push operation is to add an element into an array, subsequent to the last element. If the array is full, i.e., the total number of elements in the array is the size of array, give the warning to “unsuccessful push operation”.<br>• The pop operation is to remove the last element from the array. If the array is empty, give the warning to “unsuccessful pop operation”. Following table shows an example. Assume that size of array is 5.`],
+    ['img','data:image/webp;base64,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'],
+    ['p',String.raw`After each operation, the system should print out the element currently in the array in sequence. Please refer to the samples. You can use 1 to indicate the push operation, 2 to indicate pop operation and 0 to terminate the execution.`],
+    ['l','Non-Functional Requirements'],
+    ['p',String.raw`Use a macro to define the size of the array.`],
+    ['l','I/O Samples'],
+    ['o',String.raw`Please choose action(1: Push 2: Pop  0: Exit): 1
+Enter an integer to push: 3
+----------------------
+| Stack: 3 
+----------------------
+Please choose action(1: Push 2: Pop  0: Exit): 1
+Enter an integer to push: 5
+----------------------
+| Stack: 3 5 
+----------------------
+Please choose action(1: Push 2: Pop  0: Exit): 2
+Popped: 5
+----------------------
+| Stack: 3 
+----------------------
+Please choose action(1: Push 2: Pop  0: Exit): 2
+Popped: 3
+----------------------
+| Stack: 
+----------------------
+Please choose action(1: Push 2: Pop  0: Exit): 2
+Unsuccessful pop operation: Stack is empty
+----------------------
+| Stack: 
+----------------------
+Please choose action(1: Push 2: Pop  0: Exit): 1
+Enter an integer to push: 10
+----------------------
+| Stack: 10 
+----------------------
+Please choose action(1: Push 2: Pop  0: Exit): 1
+Enter an integer to push: 20
+----------------------
+| Stack: 10 20 
+----------------------
+Please choose action(1: Push 2: Pop  0: Exit): 1
+Enter an integer to push: 3
+----------------------
+| Stack: 10 20 3 
+----------------------
+Please choose action(1: Push 2: Pop  0: Exit): 1
+Enter an integer to push: 23
+----------------------
+| Stack: 10 20 3 23 
+----------------------
+Please choose action(1: Push 2: Pop  0: Exit): 1
+Enter an integer to push: 5
+----------------------
+| Stack: 10 20 3 23 5 
+----------------------
+Please choose action(1: Push 2: Pop  0: Exit): 1
+Unsuccessful push operation: Stack is full
+----------------------
+| Stack: 10 20 3 23 5 
+----------------------
+Please choose action(1: Push 2: Pop  0: Exit): 0
+Exiting the program
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>用一个 <code>top</code> 记录“栈里元素个数”，它同时就是下一个空位的下标：push 是 <code>stack[top++] = v;</code>，pop 是 <code>v = stack[--top];</code>。</p><p>两种失败情况要在动手之前判断：<code>top == SIZE</code> 时不能 push，<code>top == 0</code> 时不能 pop，但<b>两种情况都还要打印一次栈的内容</b>。</p><p>用 <code>while (1)</code> + <code>0</code> 退出；打印边框是 22 个短横线。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+#define SIZE 5
+
+int main(void) {
+    int stack[SIZE];
+    int top = 0;              /* number of elements, also next free slot */
+    int action, value, i;
+
+    while (1) {
+        printf("Please choose action(1: Push 2: Pop  0: Exit): ");
+        scanf("%d", &action);
+
+        if (action == 0) {
+            printf("Exiting the program\n");
+            break;
+        }
+
+        if (action == 1) {
+            printf("Enter an integer to push: ");
+            scanf("%d", &value);
+            if (top == SIZE)
+                printf("Unsuccessful push operation: Stack is full\n");
+            else
+                stack[top++] = value;
+        } else if (action == 2) {
+            if (top == 0)
+                printf("Unsuccessful pop operation: Stack is empty\n");
+            else
+                printf("Popped: %d\n", stack[--top]);
+        }
+
+        printf("----------------------\n");
+        printf("| Stack: ");
+        for (i = 0; i < top; i++)
+            printf("%d ", stack[i]);
+        printf("\n----------------------\n");
+    }
+
+    return 0;
+}
+
+/* top == SIZE  -> push refused, but the stack content is still printed
+   top == 0     -> pop refused, empty stack still printed
+   --top uses the value AFTER decrement, which is the last valid index */`,
+  notes:[
+    String.raw`栈是“后进先出”，只需要一个 <code>top</code> 指针，不需要搬动数据。`,
+    String.raw`<code>stack[--top]</code> 先减再取，正好取到最后一个有效元素。`,
+    String.raw`失败提示要放在打印栈内容之前，这样输出顺序和样例一致。`
+  ]
+},
+{
+  n:25, cat:'Arrays & Strings', title:'Sorting Ascending and Descending',
+  body:[
+    ['p',String.raw`Write a program to sort integer-type array <code>a[n]</code> in ascending order and then in descending order. The program reads the total number <code>n</code> of integers first and then the integers to sort. Output a warning if <code>n</code> is not a positive integer.`],
+    ['l','I/O Samples'],
+    ['p',String.raw`<b>Sample 1</b>`],
+    ['o',String.raw`Input the size of the array: 5
+Input 5 integers of the array: 23 0 89 -1 55
+The original array is: 23 0 89 -1 55 
+After sorting, the array in ascending order is: -1 0 23 55 89 
+After sorting, the array in descending order is: 89 55 23 0 -1 
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 2</b>`],
+    ['o',String.raw`Input the size of the array: -6
+Warning! Array size should be positive.
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>读完 <code>n</code> 先判 <code>n &lt;= 0</code>，为真就警告并结束，避免后面定义变长数组出错。</p><p>排序用最朴素的选择排序或冒泡排序即可，两层 <code>for</code> 加一个临时变量 <code>t</code> 交换。</p><p>降序不用再排一次：升序结果从后往前打印就是降序。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    int n, i, j, t;
+    int a[100];
+
+    printf("Input the size of the array: ");
+    scanf("%d", &n);
+
+    if (n <= 0) {
+        printf("Warning! Array size should be positive.\n");
+        return 0;
+    }
+
+    printf("Input %d integers of the array: ", n);
+    for (i = 0; i < n; i++)
+        scanf("%d", &a[i]);
+
+    printf("The original array is: ");
+    for (i = 0; i < n; i++)
+        printf("%d ", a[i]);
+    printf("\n");
+
+    /* bubble sort, ascending */
+    for (i = 0; i < n - 1; i++)
+        for (j = 0; j < n - 1 - i; j++)
+            if (a[j] > a[j + 1]) {
+                t = a[j];
+                a[j] = a[j + 1];
+                a[j + 1] = t;
+            }
+
+    printf("After sorting, the array in ascending order is: ");
+    for (i = 0; i < n; i++)
+        printf("%d ", a[i]);
+    printf("\n");
+
+    printf("After sorting, the array in descending order is: ");
+    for (i = n - 1; i >= 0; i--)
+        printf("%d ", a[i]);
+    printf("\n");
+
+    return 0;
+}
+
+/* Each printed array ends with a trailing space, exactly like the sample. */`,
+  notes:[
+    String.raw`冒泡排序内层条件 <code>j &lt; n - 1 - i</code>：每轮结束最大的数已经沉到末尾，不用再比。`,
+    String.raw`交换必须用临时变量，<code>a[j] = a[j+1]; a[j+1] = a[j];</code> 会把数据覆盖掉。`,
+    String.raw`降序直接倒着遍历打印，省一次排序；如果要求数组本身变成降序，再跑一遍 <code>a[j] &lt; a[j+1]</code> 的冒泡即可。`
+  ]
+},
+{
+  n:26, cat:'Arrays & Strings', title:'4-Digit Hex to Decimal',
+  body:[
+    ['p',String.raw`Write a program to convert a 4-digit hexadecimal number into its corresponding decimal number. Output a warning if the input is not a valid hexadecimal number. Assume the length of the input is always valid and the hexadecimal number is unsigned.`],
+    ['l','Non-Functional Requirements'],
+    ['p',String.raw`Read the input using <code>%s</code>.`],
+    ['l','I/O Samples'],
+    ['p',String.raw`<b>Sample 1</b>`],
+    ['o',String.raw`Please input a 4-digit hexadecimal number: fffg
+Warning! Invalid hexadecimal number.
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 2</b>`],
+    ['o',String.raw`Please input a 4-digit hexadecimal number: ffff
+The decimal value is: 65535
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 3</b>`],
+    ['o',String.raw`Please input a 4-digit hexadecimal number: FFFF
+The decimal value is: 65535
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 4</b>`],
+    ['o',String.raw`Please input a 4-digit hexadecimal number: fFff
+The decimal value is: 65535
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>用 <code>%s</code> 读进一个 <code>char</code> 数组，然后逐位处理：每一位的权值是 <code>16^(3-位置)</code>，换成递推就是 <code>value = value * 16 + digit</code>。</p><p>关键是把字符变成数值：<code>'0'~'9'</code> 减 <code>'0'</code>；<code>'a'~'f'</code> 减 <code>'a'</code> 再加 10；<code>'A'~'F'</code> 同理。其他字符就是非法输入。</p><p>样例 1 的 <code>fffg</code> 里 <code>g</code> 不合法，要报错而不是算出一个数。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int main(void) {
+    char hex[16];
+    int i, value = 0, digit, valid = 1;
+
+    printf("Please input a 4-digit hexadecimal number: ");
+    scanf("%s", hex);
+
+    for (i = 0; i < 4; i++) {
+        char c = hex[i];
+
+        if (c >= '0' && c <= '9')      digit = c - '0';
+        else if (c >= 'a' && c <= 'f') digit = c - 'a' + 10;
+        else if (c >= 'A' && c <= 'F') digit = c - 'A' + 10;
+        else { valid = 0; break; }
+
+        value = value * 16 + digit;
+    }
+
+    if (!valid)
+        printf("Warning! Invalid hexadecimal number.\n");
+    else
+        printf("The decimal value is: %d\n", value);
+
+    return 0;
+}
+
+/* ffff -> ((15*16+15)*16+15)*16+15 = 65535
+   fFff -> mixed case is fine, 'F' and 'f' are both 15
+   fffg -> 'g' hits the invalid branch            */`,
+  notes:[
+    String.raw`<code>value = value * 16 + digit</code> 是“霍纳法则”，从左到右扫描即可，不必求幂。`,
+    String.raw`字符 <code>'0'</code> 的 ASCII 是 48，所以 <code>'7' - '0'</code> 正好等于 7。`,
+    String.raw`<code>scanf("%s", hex)</code> 读字符串时数组名本身已经是地址，不用加 <code>&amp;</code>。`
+  ]
+},
+{
+  n:27, cat:'Functions', title:'ASCII Difference Function',
+  body:[
+    ['p',String.raw`Write a program to calculate the ASCII difference between two characters.`],
+    ['l','Non-Functional Requirements'],
+    ['p',String.raw`Write two functions: <code>main</code> funtion and a sub-function <code>differenceASCIICode</code>.`],
+    ['p',String.raw`The <code>differenceASCIICode</code> function will count and return the difference between the ASCII code of any two characters accordingly.`],
+    ['p',String.raw`For example, <code>differenceASCIICode('a', 'b')</code> returns <code>-1</code>; if <code>differenceASCIICode('b', 'a')</code> returns <code>1</code>; <code>differenceASCIICode('a', 'a')</code> returns <code>0</code>. The <code>main</code> function will read two characters from keyboard and call the <code>differenceASCIICode</code> function to find the difference between the inputted two characters. The <code>main</code> function will also print out result according to the return value from the <code>differenceASCIICode</code> function.`],
+    ['p',String.raw`For example, if input is <code>a c</code>, then the output could be the difference between character <code>'a'</code> and <code>'c'</code> is <code>-2</code>.`],
+    ['l','I/O Samples'],
+    ['p',String.raw`<b>Sample 1</b>`],
+    ['o',String.raw`Please enter two characters: a b
+The difference between character 'a' and 'b' is -1.
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 2</b>`],
+    ['o',String.raw`Please enter two characters: d a
+The difference between character 'd' and 'a' is 3.
+Press any key to continue...`],
+    ['p',String.raw`<b>Sample 3</b>`],
+    ['o',String.raw`Please enter two characters: m m
+The difference between character 'm' and 'm' is 0.
+Press any key to continue...`]
+  ],
+  hint:String.raw`<p>函数只有一句话：<code>return a - b;</code> —— 字符参与算术运算时会自动变成它的 ASCII 码。</p><p>为什么 <code>('a','b')</code> 是 -1 而不是 1？因为第一个参数减第二个，顺序不能反。</p><p><code>main</code> 里读两个字符时，格式串用 <code>" %c %c"</code> 更稳，能跳过多余空白。</p>`,
+  sol:String.raw`#include <stdio.h>
+
+int differenceASCIICode(char a, char b);
+
+int main(void) {
+    char c1, c2;
+    int diff;
+
+    printf("Please enter two characters: ");
+    scanf(" %c %c", &c1, &c2);
+
+    diff = differenceASCIICode(c1, c2);
+    printf("The difference between character '%c' and '%c' is %d.\n", c1, c2, diff);
+
+    return 0;
+}
+
+int differenceASCIICode(char a, char b) {
+    return a - b;      /* 'a' - 'b' == 97 - 98 == -1 */
+}
+
+/* 'a','b' -> -1     'b','a' -> 1     'a','a' -> 0     'd','a' -> 3 */`,
+  notes:[
+    String.raw`<code>char</code> 在表达式里会被提升为 <code>int</code>，所以可以直接相减得到 ASCII 差值。`,
+    String.raw`函数返回类型写 <code>int</code> 而不是 <code>char</code>，因为差值可能超出 char 的范围。`,
+    String.raw`调用前需要声明（函数原型），或者把函数定义写在 <code>main</code> 之前。`
+  ]
+}
+];
+
+/* =========================================================
+   rendering
+   ========================================================= */
+const stage      = document.getElementById('stage');
+const chipsEl    = document.getElementById('chips');
+const counterEl  = document.getElementById('counter');
+const pbar       = document.getElementById('pbar');
+const prevBtn    = document.getElementById('prevBtn');
+const nextBtn    = document.getElementById('nextBtn');
+const scrim      = document.getElementById('scrim');
+const palGrid    = document.getElementById('palGrid');
+const searchEl   = document.getElementById('search');
+
+const KW = new Set('auto break case char const continue default do double else enum extern float for goto if int long register return short signed sizeof static struct switch typedef union unsigned void volatile while'.split(' '));
+const pad = n => String(n).padStart(2,'0');
+const DONE_KEY = 'c-exercises-1-done';
+let done = new Set();
+try { done = new Set(JSON.parse(localStorage.getItem(DONE_KEY) || '[]')); } catch(e) { done = new Set(); }
+
+function esc(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function hl(src){
+  const re = /(\/\*[\s\S]*?\*\/)|(\/\/[^\n]*)|("(?:[^"\\]|\\.)*")|('(?:[^'\\]|\\.)*')|(^[ \t]*#[ \t]*\w+)|(\b\d+(?:\.\d+)?\b)|([A-Za-z_]\w*)/gm;
+  let out = '', last = 0, m;
+  while ((m = re.exec(src)) !== null) {
+    out += esc(src.slice(last, m.index));
+    const t = m[0];
+    let cls = '';
+    if (m[1] || m[2]) cls = 'cm';
+    else if (m[3]) cls = 'st';
+    else if (m[4]) cls = 'ch';
+    else if (m[5]) cls = 'pp';
+    else if (m[6]) cls = 'nu';
+    else if (m[7]) cls = KW.has(t) ? 'kw' : '';
+    out += cls ? '<span class="' + cls + '">' + esc(t) + '</span>' : esc(t);
+    last = m.index + t.length;
+  }
+  out += esc(src.slice(last));
+  return out;
+}
+
+function block([type, val]){
+  if (type === 'p')   return '<p>' + val + '</p>';
+  if (type === 'l')   return '<div class="label">' + val + '</div>';
+  if (type === 'c')   return '<pre><code>' + hl(val) + '</code></pre>';
+  if (type === 'o')   return '<pre class="out">' + esc(val).replace(/(Press any key to continue\.\.\.)/g,'<span class="dim">$1</span>') + '</pre>';
+  if (type === 'img') return '<div class="figure"><img src="' + val + '" alt="diagram" loading="lazy"></div>';
+  return '';
+}
+
+function render(i, dir){
+  const d = DATA[i];
+  const body = d.body.map(block).join('');
+  stage.innerHTML = `
+  <article class="card glass">
+    <div class="card-top">
+      <div class="meta">
+        <span class="num">EX ${pad(d.n)}</span>
+        <span class="sep"></span>
+        <span class="cat">${d.cat}</span>
+      </div>
+      <h2 class="title"><span class="grad">${d.title}</span></h2>
+    </div>
+    <div class="card-body" id="cardBody">
+      <div class="q">${body}</div>
+
+      <div class="actions">
+        <button class="btn" data-act="hint">
+          <svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.4.3.5.7.5 1.1V16h6v-1c0-.4.1-.8.5-1.1A6 6 0 0 0 12 3z"/></svg>
+          Hint <span class="tag-zh">提示</span>
+        </button>
+        <button class="btn primary" data-act="ans">
+          <svg viewBox="0 0 24 24"><path d="M4 12.5l5 5L20 6.5"/></svg>
+          Answer <span class="tag-zh">答案</span>
+        </button>
+      </div>
+
+      <div class="panel hint" id="hintPanel">
+        <div class="inner"><div class="panel-card">
+          <div class="panel-head"><div class="panel-title"><span class="dotw"></span>Hint · 提示</div></div>
+          ${d.hint}
+        </div></div>
+      </div>
+
+      <div class="panel ans" id="ansPanel">
+        <div class="inner"><div class="panel-card">
+          <div class="panel-head">
+            <div class="panel-title"><span class="dotw"></span>Answer · 参考答案</div>
+            <button class="copy" data-act="copy">Copy</button>
+          </div>
+          <pre><code id="solCode">${hl(d.sol)}</code></pre>
+          <ul>${d.notes.map(x => '<li>' + x + '</li>').join('')}</ul>
+        </div></div>
+      </div>
+    </div>
+    <div class="card-foot">
+      <button class="foot-btn" data-act="prev" ${i===0?'disabled':''}>
+        <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg> Previous
+      </button>
+      <span class="foot-mid">${pad(d.n)} — ${DATA.length}</span>
+      <button class="foot-btn" data-act="next" ${i===DATA.length-1?'disabled':''}>
+        Next <svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+  </article>`;
+
+  const card = stage.firstElementChild;
+  card.classList.add('anim');
+  if (dir < 0) card.classList.add('back');
+
+  card.addEventListener('pointermove', e => {
+    const r = card.getBoundingClientRect();
+    card.style.setProperty('--mx', ((e.clientX - r.left) / r.width * 100) + '%');
+    card.style.setProperty('--my', ((e.clientY - r.top) / r.height * 100) + '%');
+  });
+
+  card.querySelector('#cardBody').scrollTop = 0;
+}
+
+/* panels */
+function toggle(panel, btn){
+  const open = panel.classList.toggle('open');
+  btn.classList.toggle('on', open);
+  if (!open) return;
+  setTimeout(() => {
+    const body = panel.closest('.card-body');
+    if (!body) return;
+    const r1 = body.getBoundingClientRect(), r2 = panel.getBoundingClientRect();
+    body.scrollTo({ top: body.scrollTop + (r2.top - r1.top) - 16, behavior:'smooth' });
+  }, 280);
+}
+
+/* state */
+let cur = 0;
+try {
+  const saved = parseInt(localStorage.getItem('c-exercises-1-cur') || '0', 10);
+  if (saved >= 0 && saved < DATA.length) cur = saved;
+} catch(e) {}
+
+/* deep link: Exercises.html#12  (also ?n=12 when hosted) */
+try {
+  let qn = parseInt((location.hash || '').replace(/[^\d]/g, ''), 10);
+  if (!qn) qn = parseInt(new URLSearchParams(location.search).get('n') || '', 10);
+  if (qn >= 1 && qn <= DATA.length) cur = qn - 1;
+} catch(e) {}
+
+function paintChrome(){
+  counterEl.textContent = pad(cur+1) + ' / ' + DATA.length;
+  pbar.style.width = ((cur+1) / DATA.length * 100) + '%';
+  [...chipsEl.children].forEach((c, i) => {
+    c.classList.toggle('on', i === cur);
+    c.classList.toggle('done', done.has(i+1));
+  });
+  const active = chipsEl.children[cur];
+  if (active) active.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'});
+  prevBtn.disabled = cur === 0;
+  nextBtn.disabled = cur === DATA.length - 1;
+  try { localStorage.setItem('c-exercises-1-cur', cur); } catch(e) {}
+}
+
+function go(i, dir){
+  if (i < 0 || i >= DATA.length) return;
+  const d = dir !== undefined ? dir : (i > cur ? 1 : -1);
+  cur = i;
+  render(cur, d);
+  paintChrome();
+  buildPalette(searchEl.value);
+}
+
+/* chips */
+DATA.forEach((d, i) => {
+  const b = document.createElement('button');
+  b.className = 'chip';
+  b.textContent = d.n;
+  b.title = 'Exercise ' + d.n + ' · ' + d.title;
+  b.addEventListener('click', () => go(i));
+  chipsEl.appendChild(b);
+});
+
+/* palette */
+function buildPalette(q){
+  const key = (q || '').trim().toLowerCase();
+  const list = DATA.filter(d =>
+    !key || String(d.n) === key ||
+    d.title.toLowerCase().includes(key) ||
+    d.cat.toLowerCase().includes(key)
+  );
+  palGrid.innerHTML = list.length ? list.map(d => `
+    <button class="tile ${d.n-1===cur?'on':''}" data-i="${d.n-1}">
+      <span class="tn">${pad(d.n)}</span>
+      <span class="tw"><span class="tt">${d.title}</span><span class="tc">${d.cat}</span></span>
+    </button>`).join('') : '<div class="empty">No exercise matches “' + esc(q) + '”.</div>';
+}
+
+function openPalette(){
+  buildPalette('');
+  scrim.classList.add('open');
+  setTimeout(() => searchEl.focus(), 120);
+}
+function closePalette(){
+  scrim.classList.remove('open');
+  searchEl.value = '';
+  buildPalette('');
+}
+
+/* events */
+document.getElementById('openPalette').addEventListener('click', openPalette);
+prevBtn.addEventListener('click', () => go(cur - 1, -1));
+nextBtn.addEventListener('click', () => go(cur + 1, 1));
+scrim.addEventListener('click', e => { if (e.target === scrim) closePalette(); });
+searchEl.addEventListener('input', e => buildPalette(e.target.value));
+palGrid.addEventListener('click', e => {
+  const t = e.target.closest('.tile');
+  if (!t) return;
+  go(parseInt(t.dataset.i, 10));
+  closePalette();
+});
+
+stage.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]');
+  if (!b) return;
+  const act = b.dataset.act;
+  if (act === 'hint') toggle(document.getElementById('hintPanel'), b);
+  if (act === 'ans') {
+    toggle(document.getElementById('ansPanel'), b);
+    if (!done.has(cur+1)) {
+      done.add(cur+1);
+      try { localStorage.setItem(DONE_KEY, JSON.stringify([...done])); } catch(err) {}
+      paintChrome();
+    }
+  }
+  if (act === 'copy') {
+    const code = DATA[cur].sol;
+    navigator.clipboard.writeText(code).then(() => {
+      b.textContent = 'Copied';
+      b.classList.add('ok');
+      setTimeout(() => { b.textContent = 'Copy'; b.classList.remove('ok'); }, 1400);
+    }).catch(() => {});
+  }
+  if (act === 'prev') go(cur - 1, -1);
+  if (act === 'next') go(cur + 1, 1);
+});
+
+document.addEventListener('keydown', e => {
+  const typing = e.target.tagName === 'INPUT';
+  if (e.key === 'Escape' && scrim.classList.contains('open')) { closePalette(); return; }
+  if (typing) return;
+  if (e.key === '/') { e.preventDefault(); openPalette(); return; }
+  if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); go(cur + 1, 1); }
+  if (e.key === 'ArrowLeft'  || e.key === 'PageUp')   { e.preventDefault(); go(cur - 1, -1); }
+  if (e.key === 'h' || e.key === 'H') {
+    const p = document.getElementById('hintPanel'), b = stage.querySelector('[data-act="hint"]');
+    if (p) toggle(p, b);
+  }
+  if (e.key === 'a' || e.key === 'A') {
+    const p = document.getElementById('ansPanel'), b = stage.querySelector('[data-act="ans"]');
+    if (p) { toggle(p, b); done.add(cur+1); try { localStorage.setItem(DONE_KEY, JSON.stringify([...done])); } catch(err) {} paintChrome(); }
+  }
+});
+
+/* boot */
+render(cur, 1);
+paintChrome();
+buildPalette('');
+</script>
+</body>
+</html>
